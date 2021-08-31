@@ -246,5 +246,56 @@ namespace BmsParser
             }
             return sb.ToString();
         }
+
+        public enum NoteType { All, Key, LongKey, Scratch, LongScratch, Mine }
+        public enum PlaySide { Both, P1, P2 }
+
+        public int GetTotalNotes(NoteType type = NoteType.All, int start = 0, int end = int.MaxValue, PlaySide side = PlaySide.Both)
+        {
+            if (Mode.Player == 1 && side == PlaySide.P2)
+                return 0;
+            var slane = new int[Mode.ScratchKey.Length / (side == PlaySide.Both ? 1 : Mode.Player)];
+            var sindex = 0;
+            for (var i = side == PlaySide.P2 ? slane.Length : 0; sindex < slane.Length; i++)
+            {
+                slane[sindex] = Mode.ScratchKey[i];
+                sindex++;
+            }
+            var nlane = new int[(Mode.Key - Mode.ScratchKey.Length) / (side == PlaySide.Both ? 1 : Mode.Player)];
+            var nindex = 0;
+            for (var i = 0; nindex < nlane.Length; i++)
+            {
+                if (!Mode.IsScratchKey(i))
+                {
+                    nlane[nindex] = i;
+                    nindex++;
+                }
+            }
+
+            return TimeLines.Where(tl => start <= tl.Time && tl.Time < end)
+                .Sum(tl => type switch
+                {
+                    NoteType.All => tl.GetTotalNotes(LNType),
+                    NoteType.Key => nlane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is NormalNote),
+                    NoteType.LongKey => nlane
+                        .Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is LongNote ln
+                            && (ln.Type == LNMode.LongNote
+                                || ln.Type == LNMode.ChargeNote
+                                || ln.Type == LNMode.HellChargeNote
+                                || ln.Type == LNMode.Undefined && LNType != LNType.LongNote
+                                || !ln.IsEnd)),
+                    NoteType.Scratch => slane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is NormalNote),
+                    NoteType.LongScratch => slane
+                        .Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is LongNote ln
+                            && (ln.Type == LNMode.LongNote
+                                || ln.Type == LNMode.ChargeNote
+                                || ln.Type == LNMode.HellChargeNote
+                                || ln.Type == LNMode.Undefined && LNType != LNType.LongNote
+                                || !ln.IsEnd)),
+                    NoteType.Mine => nlane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is MineNote)
+                        + slane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is MineNote),
+                    _ => 0
+                });
+        }
     }
 }
