@@ -172,6 +172,8 @@ namespace BmsParser
 
         public TotalType TotalType { get; set; }
 
+        public int LNObj { get; set; } = -1;
+
         public Dictionary<string, string> Values { get; }
 
         public string ToChartString()
