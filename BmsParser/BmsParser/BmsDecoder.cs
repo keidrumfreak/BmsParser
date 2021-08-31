@@ -24,9 +24,9 @@ namespace BmsParser
             logs.Clear();
             var time = DateTime.Now;
             var model = new BmsModel();
-            var scrollTable = new SortedDictionary<int, double>();
-            var stopTable = new SortedDictionary<int, double>();
-            var bpmTable = new SortedDictionary<int, double>();
+            var scrollTable = new Dictionary<int, double>();
+            var stopTable = new Dictionary<int, double>();
+            var bpmTable = new Dictionary<int, double>();
             var wm = new int[36 * 36];
             Array.Fill(wm, -2);
             var wavList = new List<string>();
@@ -246,8 +246,14 @@ namespace BmsParser
             model.WavList = wavList.ToArray();
             model.BgaList = bgaList.ToArray();
 
-            var sections = Enumerable.Range(0, maxsec);
-                //.Select(i => new Section)
+            var prev = default(Section);
+            var sections = new List<Section>();
+            for (var i = 0; i <= maxsec; i++)
+            {
+                var section = new Section(model, prev, lines[i] ?? new List<string>(), bpmTable, stopTable, scrollTable, logs);
+                sections.Add(section);
+                prev = section;
+            }
 
             var baseTL = new TimeLine(0, 0, model.Mode.Key);
 
