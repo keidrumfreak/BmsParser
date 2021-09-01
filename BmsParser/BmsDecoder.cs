@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,12 +15,19 @@ namespace BmsParser
             LNType = lnType;
         }
 
-        public override BmsModel Decode(ChartInformation info)
+        new public BmsModel Decode(string path)
         {
-            throw new NotImplementedException();
+            var model = decode(path, path.EndsWith(".pms"), null);
+            return model;
         }
 
-        private BmsModel decode(string path, byte[] data, bool isPms, int[] selectedRandom)
+        public override BmsModel Decode(ChartInformation info)
+        {
+            LNType = info.LNType;
+            return decode(info.Path, info.Path.EndsWith(".pms"), info.SelectedRandoms);
+        }
+
+        private BmsModel decode(string path, bool isPms, int[] selectedRandom)
         {
             logs.Clear();
             var time = DateTime.Now;
@@ -248,9 +256,87 @@ namespace BmsParser
                 prev = section;
             }
 
+            var timeLines = new SortedDictionary<double, TimeLineCache>();
+            var lnList = new List<LongNote>[model.Mode.Key];
+            var lnEndStatus = new LongNote[model.Mode.Key];
             var baseTL = new TimeLine(0, 0, model.Mode.Key);
+            baseTL.Bpm = model.Bpm;
+            timeLines.Add(0.0, new TimeLineCache(0.0, baseTL));
+            foreach (var section in sections)
+            {
+                section.MakeTimeLine(wm, bm, timeLines, lnList, lnEndStatus);
+            }
+
+            var tl = timeLines.Values.Select(t => t.TimeLine).ToArray();
+            model.TimeLines = tl;
+            if (tl[0].Bpm == 0)
+            {
+                logs.Add(new DecodeLog(State.Warning, "開始BPMが定義されていないため、BMS解析に失敗しました"));
+                return null;
+            }
+
+            foreach (var i in Enumerable.Range(0, lnEndStatus.Length).Where(j => lnEndStatus[j] != null))
+            {
+                logs.Add(new DecodeLog(State.Warning, $"曲の終端までにLN終端定義されていないLNがあります。lane:{i + 1}"));
+                if (lnEndStatus[i].Section != double.MinValue)
+                    timeLines[lnEndStatus[i].Section].TimeLine.SetNote(i, null);
+            }
+
+            if (model.TotalType != TotalType.Bms)
+            {
+                logs.Add(new DecodeLog(State.Warning, "TOTALが未定義です"));
+            }
+            if (model.Total <= 60.0)
+            {
+                logs.Add(new DecodeLog(State.Warning, "TOTAL値が少なすぎます"));
+            }
+            if (tl.Length > 0)
+            {
+                if (tl[tl.Length - 1].Time >= model.LastTime + 30000)
+                {
+                    logs.Add(new DecodeLog(State.Warning, "最後のノート定義から30秒以上の余白があります"));
+                }
+            }
+            if (model.Player > 1 && (model.Mode == Mode.Beat5K || model.Mode == Mode.Beat7K))
+            {
+                logs.Add(new DecodeLog(State.Warning, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
+            }
+            if (model.Player == 1 && (model.Mode == Mode.Beat10K || model.Mode == Mode.Beat14K))
+            {
+                logs.Add(new DecodeLog(State.Warning, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
+            }
+
+            model.MD5 = getMd5Hash(path);
+            model.Sha256 = getSha256Hash(path);
+
+            if (selectedRandom == null)
+            {
+                selectedRandom = srandoms.ToArray();
+            }
+
+            model.ChartInformation = new ChartInformation(path, LNType, selectedRandom);
 
             return model;
+        }
+
+        private string getMd5Hash(string path)
+        {
+            using (var file = File.OpenRead(path))
+            {
+                var md5 = MD5.Create();
+                var arr = md5.ComputeHash(file);
+                return BitConverter.ToString(arr).ToLower().Replace("-", "");
+            }
+        }
+
+        private string getSha256Hash(string path)
+        {
+            using (var file = File.OpenRead(path))
+            {
+                var sha256 = SHA256.Create();
+                var arr = sha256.ComputeHash(file);
+                return BitConverter.ToString(arr).ToLower().Replace("-", "");
+            }
         }
     }
 }

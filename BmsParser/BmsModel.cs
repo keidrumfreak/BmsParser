@@ -103,6 +103,8 @@ namespace BmsParser
             .LastOrDefault(tl => Enumerable.Range(0, Mode.Key)
                 .Any(lane => tl.ExistNote(lane)))?.TimeMilliSeccond ?? 0;
 
+        public int LastTime => (int)LastNoteMilliTime;
+
         /// <summary>
         /// 表記ランク
         /// </summary>

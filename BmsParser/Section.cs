@@ -144,7 +144,7 @@ namespace BmsParser
         int[] beat7ChannelAssign = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
         int[] popnChannelAssign = { 0, 1, 2, 3, 4, -1, -1, -1, -1, -1, 5, 6, 7, 8, -1, -1, -1, -1 };
 
-        public void MakeTimeLine(int[] wavMap, int[] bgaMap, Dictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
+        public void MakeTimeLine(int[] wavMap, int[] bgaMap, SortedDictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
         {
             var baseTL = getTimeLine(sectionNum, tlCache);
             baseTL.IsSectionLine = true;
@@ -405,7 +405,7 @@ namespace BmsParser
             }
         }
 
-        private TimeLine getTimeLine(double section, Dictionary<double, TimeLineCache> tlCache)
+        private TimeLine getTimeLine(double section, SortedDictionary<double, TimeLineCache> tlCache)
         {
             if (tlCache.TryGetValue(section, out var tlc))
                 return tlc.TimeLine;
