@@ -225,12 +225,8 @@ namespace BmsParser
                     }
                     else
                     {
-                        var word = CommandWord.Words.FirstOrDefault(w => line.StartsWith(w.Name) && line.Length > w.Name.Length + 2);
-                        if (word == default)
-                            continue;
-                        var log = word.Func(model, line[(word.Name.Length + 2)..].Trim());
-                        if (log != null)
-                            logs.Add(log);
+                        var processor = new LineProcessor();
+                        processor.Process(model, line, logs);
                     }
                 }
                 else if (line[0] == '%' || line[0] == '@')
@@ -258,130 +254,6 @@ namespace BmsParser
             var baseTL = new TimeLine(0, 0, model.Mode.Key);
 
             return model;
-        }
-
-        public record CommandWord(string Name, Func<BmsModel, string, DecodeLog> Func)
-        {
-            public static readonly CommandWord Player = new("#PLAYER", (model, arg) =>
-            {
-                if (!int.TryParse(arg, out var player))
-                    return new DecodeLog(State.Warning, $"#PLAYERに数字が定義されていません");
-                model.Player = player;
-                return null;
-            });
-
-            public static readonly CommandWord Genre = new("#GENRE", (model, arg) => { model.Genre = arg; return null; });
-
-            public static readonly CommandWord Title = new("#TITLE", (model, arg) => { model.Title = arg; return null; });
-
-            public static readonly CommandWord SubTitle = new("#SUBTITLE", (model, arg) => { model.SubTitle = arg; return null; });
-
-            public static readonly CommandWord Artist = new("#ARTIST", (model, arg) => { model.Artist = arg; return null; });
-
-            public static readonly CommandWord SubArtist = new("#SUBARTIST", (model, arg) => { model.SubArtist = arg; return null; });
-
-            public static readonly CommandWord PlayLevel = new("#PLAYLEVEL", (model, arg) => { model.PlayLevel = arg; return null; });
-
-            public static readonly CommandWord Rank = new("#RANK", (model, arg) =>
-            {
-                if (!int.TryParse(arg, out var rank))
-                    return new DecodeLog(State.Warning, $"#RANKに数字が定義されていません");
-                if (rank < 0 || 4 < rank)
-                    return new DecodeLog(State.Warning, $"#RANKに規定外の数字が定義されています : {rank}");
-                model.JudgeRank = rank;
-                model.JudgeRankType = JudgeRankType.BmsRank;
-                return null;
-            });
-
-            public static readonly CommandWord DefEXRank = new("#DEFEXRANK", (model, arg) =>
-            {
-                if (!int.TryParse(arg, out var rank))
-                    return new DecodeLog(State.Warning, $"#DEFEXRANKに数字が定義されていません");
-                if (rank < 1)
-                    return new DecodeLog(State.Warning, $"#DEFEXRANK 1未満はサポートしていません{rank}");
-                model.JudgeRank = rank;
-                model.JudgeRankType = JudgeRankType.BmsDefEXRank;
-                return null;
-            });
-
-            public static readonly CommandWord Total = new("#TOTAL", (model, arg) =>
-            {
-                if (!int.TryParse(arg, out var total))
-                    return new DecodeLog(State.Warning, $"#TOTALに数字が定義されていません");
-                if (total < 1)
-                    return new DecodeLog(State.Warning, $"#TOTALが0以下です");
-                model.JudgeRank = total;
-                model.JudgeRankType = JudgeRankType.BmsDefEXRank;
-                return null;
-            });
-
-            public static readonly CommandWord VolWav = new("#VOLWAV", (model, arg) =>
-            {
-                if (!int.TryParse(arg, out var total))
-                    return new DecodeLog(State.Warning, $"#VOLWAVに数字が定義されていません");
-                model.Total = total;
-                model.TotalType = TotalType.Bms;
-                return null;
-            });
-
-            public static readonly CommandWord StageFile = new CommandWord("#STAGEFILE", (model, arg) => { model.StageFile = arg.Replace('\\', '/'); return null; });
-
-            public static readonly CommandWord BackBmp = new CommandWord("#BACKBMP", (model, arg) => { model.BackBmp = arg.Replace('\\', '/'); return null; });
-
-            public static readonly CommandWord Preview = new CommandWord("#PREVIEW", (model, arg) => { model.Preview = arg.Replace('\\', '/'); return null; });
-
-            public static readonly CommandWord LNObj = new CommandWord("#LNOBJ", (model, arg) =>
-            {
-                if (!int.TryParse(arg, out var lnObj))
-                    return new DecodeLog(State.Warning, $"#LNOBJに数字が定義されていません");
-                model.LNObj = lnObj;
-                return null;
-            });
-
-            public static readonly CommandWord LNMode = new CommandWord("#LNMODE", (model, arg) =>
-            {
-                if (!int.TryParse(arg, out var lnMode))
-                    return new DecodeLog(State.Warning, $"#LNMODEに数字が定義されていません");
-                if (!Enum.IsDefined(typeof(LNMode), lnMode))
-                    return new DecodeLog(State.Warning, $"#LNMODEに無効な数字が定義されています");
-                model.LNMode = (LNMode)lnMode;
-                return null;
-            });
-
-            public static readonly CommandWord Difficulty = new CommandWord("#DIFFICULTY", (model, arg) =>
-            {
-                if (!int.TryParse(arg, out var difficulty))
-                    return new DecodeLog(State.Warning, $"#DIFFICULTYに数字が定義されていません");
-                model.Difficulty = (Difficulty)difficulty;
-                return null;
-            });
-
-            public static readonly CommandWord Banner = new CommandWord("#BANNER", (model, arg) => { model.Banner = arg.Replace('\\', '/'); return null; });
-
-            public static readonly CommandWord Comment = new CommandWord("#COMMENT", (model, arg) => { return null; }); // TODO: 未実装
-
-            public static readonly CommandWord[] Words = new[]
-            {
-                Player,
-                Genre,
-                Title,
-                SubTitle,
-                Artist,
-                SubArtist,
-                PlayLevel,
-                Rank,
-                DefEXRank,
-                Total,
-                VolWav,
-                StageFile,
-                BackBmp,
-                Preview,
-                LNObj,
-                LNMode,
-                Difficulty,
-                Banner,
-                Comment
-            };
         }
     }
 }

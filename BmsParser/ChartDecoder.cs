@@ -15,7 +15,7 @@ namespace BmsParser
 
         protected List<DecodeLog> logs = new();
 
-        public IEnumerable<DecodeLog> DecodeLog => logs.ToArray();
+        public IEnumerable<DecodeLog> DecodeLogs => logs.ToArray();
 
         /// <summary>
         /// パスで指定したファイルをBmsModelに変換する
