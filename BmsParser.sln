@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31515.178
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BmsParser", "BmsParser\BmsParser.csproj", "{1B9674EE-FFA3-41C1-8073-3B948EC8B5B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BmsParser.Tests", "BmsParser.Tests\BmsParser.Tests.csproj", "{650A1E58-B09F-46E9-A3D1-E7ABDCAF616A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1B9674EE-FFA3-41C1-8073-3B948EC8B5B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B9674EE-FFA3-41C1-8073-3B948EC8B5B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B9674EE-FFA3-41C1-8073-3B948EC8B5B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B9674EE-FFA3-41C1-8073-3B948EC8B5B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{650A1E58-B09F-46E9-A3D1-E7ABDCAF616A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{650A1E58-B09F-46E9-A3D1-E7ABDCAF616A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{650A1E58-B09F-46E9-A3D1-E7ABDCAF616A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{650A1E58-B09F-46E9-A3D1-E7ABDCAF616A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {58B36618-DED3-4B55-A2B0-004A4F35058C}
+	EndGlobalSection
+EndGlobal
