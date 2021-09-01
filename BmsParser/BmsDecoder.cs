@@ -231,11 +231,8 @@ namespace BmsParser
                 }
                 else if (line[0] == '%' || line[0] == '@')
                 {
-                    var index = line.IndexOf(' ');
-                    if (index > 0 && line.Length > index + 1)
-                    {
-                        model.Values.Add(line.Substring(1, index), line[(index + 1)..]);
-                    }
+                    var processor = new LineProcessor();
+                    processor.Process(model, line, logs);
                 }
             }
 

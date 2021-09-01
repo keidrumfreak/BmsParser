@@ -8,7 +8,7 @@ namespace BmsParser
 {
     class LineProcessor
     {
-        static CommandWord[] words =
+        static CommandWord[] command =
         {
             new CommandWord("#PLAYER", ValueType.Number, nameof(BmsModel.Player)),
             new CommandWord("#GENRE", ValueType.Text, nameof(BmsModel.Genre)),
@@ -31,8 +31,21 @@ namespace BmsParser
             new CommandWord("#LNMODE", ValueType.Number, nameof(BmsModel.LNMode))
                 { NumberRange = lnMode => Enum.IsDefined(typeof(LNMode), lnMode) },
             new CommandWord("#DIFFICULTY", ValueType.Number, nameof(BmsModel.Difficulty)),
-            new CommandWord("#BANNER", ValueType.Path, nameof(BmsModel.Banner))
+            new CommandWord("#BANNER", ValueType.Path, nameof(BmsModel.Banner)),
+            new CommandWord("#BPM", ValueType.Other, nameof(BmsModel.Bpm))
         };
+
+        static SequenceWord[] sequences =
+        {
+            new SequenceWord("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 },
+        };
+
+        Dictionary<string, Dictionary<int, double>> numTables = new()
+        {
+            { "#BPM", new Dictionary<int, double>() }
+        };
+
+        public Dictionary<int, double> BpmTable => numTables["#BPM"];
 
         public void Process(BmsModel model, string line, List<DecodeLog> logs)
         {
@@ -40,6 +53,20 @@ namespace BmsParser
                 return;
 
             var top = line.Split(' ')[0].Trim();
+            var seq = sequences.FirstOrDefault(s => top.StartsWith(s.Name));
+            if (seq != default && top != seq.Name)
+            {
+                seq.Process(top, line, model, logs, numTables);
+                return;
+            }
+
+            var word = command.FirstOrDefault(w => w.Name == top);
+            if (word != default)
+            {
+                word.Process(line, model, logs);
+                return;
+            }
+
             if (line[0] == '%' || line[0] == '@')
             {
                 if (top.Length == line.Trim().Length)
@@ -47,11 +74,49 @@ namespace BmsParser
                 model.Values.Add(top[1..], line[(top.Length + 1)..]);
                 return;
             }
+        }
 
-            var word = words.FirstOrDefault(w => w.Name == top);
-            if (word != default)
+        record SequenceWord(string Name, ValueType ValueType)
+        {
+            public Func<double, bool> NumberRange { get; init; }
+
+            public void Process(string top, string line, BmsModel model, List<DecodeLog> logs, Dictionary<string, Dictionary<int, double>> numTables)
             {
-                word.Process(line, model, logs);
+                if (top.Length != Name.Length + 2 || line.Length < Name.Length + 4 || !ChartDecoder.TryParseInt36(top[^2..], 0, out var seq))
+                {
+                    logs.Add(new DecodeLog(State.Warning, $"{Name}xxは不十分な定義です : {line}"));
+                    return;
+                }
+
+                var arg = line[(Name.Length + 3)..].Trim();
+                switch (ValueType)
+                {
+                    case ValueType.Number:
+                        if (!double.TryParse(arg, out var value))
+                        {
+                            logs.Add(new DecodeLog(State.Warning, $"{Name}xxに数字が定義されていません : {line}"));
+                            return;
+                        }
+                        if (!NumberRange?.Invoke(value) ?? false)
+                        {
+                            logs.Add(new DecodeLog(State.Warning, $"#negative {Name[1..]}はサポートされていません : {line}"));
+                            if (Name == "#BPM") return;
+                        }
+                        if (!numTables.TryGetValue(Name, out var numTable))
+                        {
+                            numTables.Add(Name, new Dictionary<int, double>());
+                            numTable = numTables[Name];
+                        }
+                        if (numTable.ContainsKey(seq))
+                        {
+                            numTable[seq] = value;
+                        }
+                        else
+                        {
+                            numTable.Add(seq, value);
+                        }
+                        return;
+                }
             }
         }
 
@@ -70,12 +135,12 @@ namespace BmsParser
                     case ValueType.Number:
                         if (!int.TryParse(arg, out var value))
                         {
-                            logs.Add(new DecodeLog(State.Warning, $"{Name}に数字が定義されていません"));
+                            logs.Add(new DecodeLog(State.Warning, $"{Name}に数字が定義されていません : {line}"));
                             return;
                         }
                         if (!NumberRange?.Invoke(value) ?? false)
                         {
-                            logs.Add(new DecodeLog(State.Warning, $"{Name}に無効な数字が定義されています"));
+                            logs.Add(new DecodeLog(State.Warning, $"{Name}に無効な数字が定義されています : {line}"));
                             return;
                         }
                         prop.SetValue(model, value);
@@ -86,6 +151,22 @@ namespace BmsParser
                     case ValueType.Path:
                         prop.SetValue(model, arg.Replace('\\', '/'));
                         break;
+                    case ValueType.Other:
+                        if (Name == "#BPM")
+                        {
+                            if (!double.TryParse(arg, out var bpm))
+                            {
+                                logs.Add(new DecodeLog(State.Warning, $"{Name}に数字が定義されていません : {line}"));
+                                return;
+                            }
+                            if (bpm <= 0)
+                            {
+                                logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
+                                return;
+                            }
+                            prop.SetValue(model, bpm);
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -93,6 +174,6 @@ namespace BmsParser
             }
         }
 
-        enum ValueType { Text, Number, Path, Other }
+        enum ValueType { Text, Number, Path, Sequence, Other }
     }
 }

@@ -25,9 +25,39 @@ namespace BmsParser.Tests
             Assert.IsFalse(logs.Any());
         }
 
+        [TestMethod]
+        public void LoadBpm()
+        {
+            var line = "#BPM 12.5";
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+
+            Assert.AreEqual(12.5, model.Bpm);
+            Assert.IsFalse(logs.Any());
+        }
+
+        [TestMethod]
+        public void LoadNegativeBpm()
+        {
+            var line = "#BPM -12.5";
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+
+            Assert.IsTrue(logs.Any());
+            Assert.AreEqual(State.Warning, logs[0].State);
+            Assert.AreEqual($"#negative BPMはサポートされていません : {line}", logs[0].Message);
+        }
+
         [DataTestMethod]
-        [DataRow("#PLAYER aaa", "#PLAYER", nameof(BmsModel.Player))]
-        public void LoadNumberFailed(string line, string name, string propertyName)
+        [DataRow("#PLAYER aaa", "#PLAYER")]
+        [DataRow("#BPM aaa", "#BPM")]
+        public void LoadNumberFailed(string line, string name)
         {
             var model = new BmsModel();
             var logs = new List<DecodeLog>();
@@ -37,7 +67,7 @@ namespace BmsParser.Tests
 
             Assert.IsTrue(logs.Any());
             Assert.AreEqual(State.Warning, logs[0].State);
-            Assert.AreEqual($"{name}に数字が定義されていません", logs[0].Message);
+            Assert.AreEqual($"{name}に数字が定義されていません : {line}", logs[0].Message);
         }
 
         [DataTestMethod]
@@ -52,7 +82,7 @@ namespace BmsParser.Tests
 
             Assert.IsTrue(logs.Any());
             Assert.AreEqual(State.Warning, logs[0].State);
-            Assert.AreEqual($"{name}に無効な数字が定義されています", logs[0].Message);
+            Assert.AreEqual($"{name}に無効な数字が定義されています : {line}", logs[0].Message);
         }
 
         [DataTestMethod]
@@ -114,6 +144,18 @@ namespace BmsParser.Tests
             processor.Process(model, line, logs);
 
             Assert.IsFalse(model.Values.Any());
+        }
+
+        [DataTestMethod]
+        [DataRow("#BPM01 12.5", 1, 12.5)]
+        public void LoadBpmSequence(string line, int seq, double value)
+        {
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+            Assert.AreEqual(value, processor.BpmTable[seq]);
         }
     }
 }
