@@ -51,7 +51,7 @@ namespace BmsParser
                     if (line.StartsWith("#RANDOM"))
                     {
                         // RONDOM制御
-                        if (!int.TryParse(line.Substring(8).Trim(), out var r))
+                        if (!int.TryParse(line[8..].Trim(), out var r))
                         {
                             logs.Add(new DecodeLog(State.Warning, "#RANDOMに数字が定義されていません"));
                             continue;
@@ -75,7 +75,7 @@ namespace BmsParser
                             continue;
                         }
 
-                        if (!int.TryParse(line.Substring(4).Trim(), out var r))
+                        if (!int.TryParse(line[4..].Trim(), out var r))
                         {
                             logs.Add(new DecodeLog(State.Warning, "#IFに数字が定義されていません"));
                             continue;
@@ -132,7 +132,7 @@ namespace BmsParser
                         // BPM
                         if (line[4] == ' ')
                         {
-                            var arg = line.Substring(5).Trim();
+                            var arg = line[5..].Trim();
                             if (!double.TryParse(arg, out var bpm))
                             {
                                 logs.Add(new DecodeLog(State.Warning, $"#BPMに数字が定義されていません : {line}"));
@@ -147,7 +147,7 @@ namespace BmsParser
                         }
                         else
                         {
-                            var arg = line.Substring(7).Trim();
+                            var arg = line[7..].Trim();
                             if (!double.TryParse(arg, out var bpm) || !TryParseInt36(line.Substring(4, 2), out var seq))
                             {
                                 logs.Add(new DecodeLog(State.Warning, $"#BPMxxに数字が定義されていません : {line}"));
@@ -170,9 +170,9 @@ namespace BmsParser
                             continue;
                         }
 
-                        var fileName = line.Substring(7).Trim().Replace('\\', '/');
+                        var fileName = line[7..].Trim().Replace('\\', '/');
 
-                        wm[seq] = wavList.Count();
+                        wm[seq] = wavList.Count;
                         wavList.Add(fileName);
                     }
                     else if (line.StartsWith("#BMP"))
@@ -184,9 +184,9 @@ namespace BmsParser
                             continue;
                         }
 
-                        var fileName = line.Substring(7).Trim().Replace('\\', '/');
+                        var fileName = line[7..].Trim().Replace('\\', '/');
 
-                        bm[seq] = bgaList.Count();
+                        bm[seq] = bgaList.Count;
                         bgaList.Add(fileName);
                     }
                     else if (line.StartsWith("#STOP"))
@@ -196,7 +196,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, $"#STOPxxは不十分な定義です : {line}"));
                             continue;
                         }
-                        if (!double.TryParse(line.Substring(8).Trim(), out var stop) || !TryParseInt36(line.Substring(5, 2), out var seq))
+                        if (!double.TryParse(line[8..].Trim(), out var stop) || !TryParseInt36(line.Substring(5, 2), out var seq))
                         {
                             logs.Add(new DecodeLog(State.Warning, $"#STOPxxに数字が定義されていません : {line}"));
                             continue;
@@ -216,7 +216,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, $"#SCROLLxxは不十分な定義です : {line}"));
                             continue;
                         }
-                        if (!double.TryParse(line.Substring(10).Trim(), out var scroll) || !TryParseInt36(line.Substring(7, 2), out var seq))
+                        if (!double.TryParse(line[10..].Trim(), out var scroll) || !TryParseInt36(line.Substring(7, 2), out var seq))
                         {
                             logs.Add(new DecodeLog(State.Warning, $"#STOPxxに数字が定義されていません : {line}"));
                             continue;
@@ -228,7 +228,7 @@ namespace BmsParser
                         var word = CommandWord.Words.FirstOrDefault(w => line.StartsWith(w.Name) && line.Length > w.Name.Length + 2);
                         if (word == default)
                             continue;
-                        var log = word.Func(model, line.Substring(word.Name.Length + 2).Trim());
+                        var log = word.Func(model, line[(word.Name.Length + 2)..].Trim());
                         if (log != null)
                             logs.Add(log);
                     }
@@ -238,7 +238,7 @@ namespace BmsParser
                     var index = line.IndexOf(' ');
                     if (index > 0 && line.Length > index + 1)
                     {
-                        model.Values.Add(line.Substring(1, index), line.Substring(index + 1));
+                        model.Values.Add(line.Substring(1, index), line[(index + 1)..]);
                     }
                 }
             }
@@ -262,7 +262,7 @@ namespace BmsParser
 
         public record CommandWord(string Name, Func<BmsModel, string, DecodeLog> Func)
         {
-            public static readonly CommandWord Player = new CommandWord("#PLAYER", (model, arg) =>
+            public static readonly CommandWord Player = new("#PLAYER", (model, arg) =>
             {
                 if (!int.TryParse(arg, out var player))
                     return new DecodeLog(State.Warning, $"#PLAYERに数字が定義されていません");
@@ -270,19 +270,19 @@ namespace BmsParser
                 return null;
             });
 
-            public static readonly CommandWord Genre = new CommandWord("#GENRE", (model, arg) => { model.Genre = arg; return null; });
+            public static readonly CommandWord Genre = new("#GENRE", (model, arg) => { model.Genre = arg; return null; });
 
-            public static readonly CommandWord Title = new CommandWord("#TITLE", (model, arg) => { model.Title = arg; return null; });
+            public static readonly CommandWord Title = new("#TITLE", (model, arg) => { model.Title = arg; return null; });
 
-            public static readonly CommandWord SubTitle = new CommandWord("#SUBTITLE", (model, arg) => { model.SubTitle = arg; return null; });
+            public static readonly CommandWord SubTitle = new("#SUBTITLE", (model, arg) => { model.SubTitle = arg; return null; });
 
-            public static readonly CommandWord Artist = new CommandWord("#ARTIST", (model, arg) => { model.Artist = arg; return null; });
+            public static readonly CommandWord Artist = new("#ARTIST", (model, arg) => { model.Artist = arg; return null; });
 
-            public static readonly CommandWord SubArtist = new CommandWord("#SUBARTIST", (model, arg) => { model.SubArtist = arg; return null; });
+            public static readonly CommandWord SubArtist = new("#SUBARTIST", (model, arg) => { model.SubArtist = arg; return null; });
 
-            public static readonly CommandWord PlayLevel = new CommandWord("#PLAYLEVEL", (model, arg) => { model.PlayLevel = arg; return null; });
+            public static readonly CommandWord PlayLevel = new("#PLAYLEVEL", (model, arg) => { model.PlayLevel = arg; return null; });
 
-            public static readonly CommandWord Rank = new CommandWord("#RANK", (model, arg) =>
+            public static readonly CommandWord Rank = new("#RANK", (model, arg) =>
             {
                 if (!int.TryParse(arg, out var rank))
                     return new DecodeLog(State.Warning, $"#RANKに数字が定義されていません");
@@ -293,7 +293,7 @@ namespace BmsParser
                 return null;
             });
 
-            public static readonly CommandWord DefEXRank = new CommandWord("#DEFEXRANK", (model, arg) =>
+            public static readonly CommandWord DefEXRank = new("#DEFEXRANK", (model, arg) =>
             {
                 if (!int.TryParse(arg, out var rank))
                     return new DecodeLog(State.Warning, $"#DEFEXRANKに数字が定義されていません");
@@ -304,7 +304,7 @@ namespace BmsParser
                 return null;
             });
 
-            public static readonly CommandWord Total = new CommandWord("#TOTAL", (model, arg) =>
+            public static readonly CommandWord Total = new("#TOTAL", (model, arg) =>
             {
                 if (!int.TryParse(arg, out var total))
                     return new DecodeLog(State.Warning, $"#TOTALに数字が定義されていません");
@@ -315,7 +315,7 @@ namespace BmsParser
                 return null;
             });
 
-            public static readonly CommandWord VolWav = new CommandWord("#VOLWAV", (model, arg) =>
+            public static readonly CommandWord VolWav = new("#VOLWAV", (model, arg) =>
             {
                 if (!int.TryParse(arg, out var total))
                     return new DecodeLog(State.Warning, $"#VOLWAVに数字が定義されていません");
@@ -324,13 +324,13 @@ namespace BmsParser
                 return null;
             });
 
-            public static readonly CommandWord StageFile = new CommandWord("#STAGEFILE", (model, arg) => { model.StageFile = arg.Replace('\\', '/'); return null; });
+            public static readonly CommandWord StageFile = new("#STAGEFILE", (model, arg) => { model.StageFile = arg.Replace('\\', '/'); return null; });
 
-            public static readonly CommandWord BackBmp = new CommandWord("#BACKBMP", (model, arg) => { model.BackBmp = arg.Replace('\\', '/'); return null; });
+            public static readonly CommandWord BackBmp = new("#BACKBMP", (model, arg) => { model.BackBmp = arg.Replace('\\', '/'); return null; });
 
-            public static readonly CommandWord Preview = new CommandWord("#PREVIEW", (model, arg) => { model.Preview = arg.Replace('\\', '/'); return null; });
+            public static readonly CommandWord Preview = new("#PREVIEW", (model, arg) => { model.Preview = arg.Replace('\\', '/'); return null; });
 
-            public static readonly CommandWord LNObj = new CommandWord("#LNOBJ", (model, arg) =>
+            public static readonly CommandWord LNObj = new("#LNOBJ", (model, arg) =>
             {
                 if (!int.TryParse(arg, out var lnObj))
                     return new DecodeLog(State.Warning, $"#LNOBJに数字が定義されていません");
@@ -338,7 +338,7 @@ namespace BmsParser
                 return null;
             });
 
-            public static readonly CommandWord LNMode = new CommandWord("#LNMODE", (model, arg) =>
+            public static readonly CommandWord LNMode = new("#LNMODE", (model, arg) =>
             {
                 if (!int.TryParse(arg, out var lnMode))
                     return new DecodeLog(State.Warning, $"#LNMODEに数字が定義されていません");
@@ -348,7 +348,7 @@ namespace BmsParser
                 return null;
             });
 
-            public static readonly CommandWord Difficulty = new CommandWord("#DIFFICULTY", (model, arg) =>
+            public static readonly CommandWord Difficulty = new("#DIFFICULTY", (model, arg) =>
             {
                 if (!int.TryParse(arg, out var difficulty))
                     return new DecodeLog(State.Warning, $"#DIFFICULTYに数字が定義されていません");
@@ -356,9 +356,9 @@ namespace BmsParser
                 return null;
             });
 
-            public static readonly CommandWord Banner = new CommandWord("#BANNER", (model, arg) => { model.Banner = arg.Replace('\\', '/'); return null; });
+            public static readonly CommandWord Banner = new("#BANNER", (model, arg) => { model.Banner = arg.Replace('\\', '/'); return null; });
 
-            public static readonly CommandWord Comment = new CommandWord("#COMMENT", (model, arg) => { return null; }); // TODO: 未実装
+            public static readonly CommandWord Comment = new("#COMMENT", (model, arg) => { return null; }); // TODO: 未実装
 
             public static readonly CommandWord[] Words = new[]
             {

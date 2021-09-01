@@ -13,7 +13,7 @@ namespace BmsParser
     {
         protected LNType LNType { get; set; }
 
-        protected List<DecodeLog> logs = new List<DecodeLog>();
+        protected List<DecodeLog> logs = new();
 
         public IEnumerable<DecodeLog> DecodeLog => logs.ToArray();
 

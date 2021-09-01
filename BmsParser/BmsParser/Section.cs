@@ -43,7 +43,7 @@ namespace BmsParser
                         channelLines.Add(line);
                         break;
                     case Channel.SectionRate:   // 小節の拡大率
-                        if (!double.TryParse(line.Substring(line.IndexOf(":") + 1), out rate))
+                        if (!double.TryParse(line[(line.IndexOf(":") + 1)..], out rate))
                             logs.Add(new DecodeLog(State.Warning, $"小節の拡大率が不正です : {line}"));
                         break;
                     case Channel.BpmChange:     // BPM変化

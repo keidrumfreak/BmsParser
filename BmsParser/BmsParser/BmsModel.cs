@@ -203,21 +203,20 @@ namespace BmsParser
                 }
                 if (tl.IsSectionLine)
                 {
-                    tlsb.Append("L");
+                    tlsb.Append('L');
                     write = true;
                 }
-                tlsb.Append("[");
+                tlsb.Append('[');
                 for (int lane = 0; lane < Mode.Key; lane++)
                 {
                     Note n = tl.GetNote(lane);
                     if (n is NormalNote)
                     {
-                        tlsb.Append("1");
+                        tlsb.Append('1');
                         write = true;
                     }
-                    else if (n is LongNote)
+                    else if (n is LongNote ln)
                     {
-                        LongNote ln = (LongNote)n;
                         if (!ln.IsEnd)
                         {
                             var lnchars = new[] { 'l', 'L', 'C', 'H' };
@@ -225,18 +224,18 @@ namespace BmsParser
                             write = true;
                         }
                     }
-                    else if (n is MineNote)
+                    else if (n is MineNote mine)
                     {
-                        tlsb.Append("m" + ((MineNote)n).Damage);
+                        tlsb.Append("m" + mine.Damage);
                         write = true;
                     }
                     else
                     {
-                        tlsb.Append("0");
+                        tlsb.Append('0');
                     }
                     if (lane < Mode.Key - 1)
                     {
-                        tlsb.Append(",");
+                        tlsb.Append(',');
                     }
                 }
                 tlsb.Append("]\n");

@@ -129,7 +129,7 @@ namespace BmsParser
 
         private Note[] hiddenNotes;
 
-        private List<Note> bgnotes = new List<Note>();
+        private List<Note> bgnotes = new();
 
         public TimeLine(double section, long time, int noteSize)
         {
