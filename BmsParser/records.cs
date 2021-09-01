@@ -16,6 +16,8 @@ namespace BmsParser
 
     public record Event(EventType Type, int Interval);
 
+    public record TimeLineCache(double Time, TimeLine TimeLine);
+
     public record Layer(Event Event, Sequece[][] Sequence)
     {
         public static readonly Layer[] Empty = Array.Empty<Layer>();
