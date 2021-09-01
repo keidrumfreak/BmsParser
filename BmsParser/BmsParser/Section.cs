@@ -29,7 +29,7 @@ namespace BmsParser
 
             foreach (var line in lines)
             {
-                if (!ChartDecoder.TryParseInt36(line.Substring(4, 2), out var channel))
+                if (!ChartDecoder.TryParseInt36(line, 4, out var channel))
                     channel = -1;
 
                 switch ((Channel)channel)
@@ -126,7 +126,7 @@ namespace BmsParser
                         });
                     }
                 }
-                // 5/7KEY -> 10/14KEY			
+                // 5/7KEY -> 10/14KEY
                 if (baseCH == NoteChannels.P2KeyBase || baseCH == NoteChannels.P2InvisibleKeyBase || baseCH == NoteChannels.P2LongKeyBase || baseCH == NoteChannels.P2MineKeyBase)
                 {
                     var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat7K : (model.Mode == Mode.Beat10K ? Mode.Beat14K : null);
@@ -147,7 +147,7 @@ namespace BmsParser
             var split = (lindex - findex) / 2;
             for (var i = 0; i < split; i++)
             {
-                if (!ChartDecoder.TryParseInt36(line.Substring(findex + i * 2, 2), out var result))
+                if (!ChartDecoder.TryParseInt36(line, findex + i * 2, out var result))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{model.Title}:チャンネル定義中の不正な値:{line}"));
                     yield return 0;
@@ -164,7 +164,7 @@ namespace BmsParser
             var split = (lindex - findex) / 2;
             for (var i = 0; i < split; i++)
             {
-                if (!ChartDecoder.TryParseInt36(line.Substring(findex + i * 2, 2), out var result))
+                if (!ChartDecoder.TryParseInt36(line, findex + i * 2, out var result))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{model.Title}:チャンネル定義中の不正な値:{line}"));
                     continue;

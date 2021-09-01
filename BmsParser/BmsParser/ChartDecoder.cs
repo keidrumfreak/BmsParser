@@ -26,14 +26,14 @@ namespace BmsParser
 
         public abstract BmsModel Decode(ChartInformation info);
 
-        public static bool TryParseInt36(string s, out int value)
+        public static bool TryParseInt36(string s, int index, out int value)
         {
             value = 0;
 
-            if (s.Length != 2)
+            if (s.Length < index + 2)
                 return false;
 
-            var c1 = s[0];
+            var c1 = s[index];
             if ('0' <= c1 && c1 <= '9')
             {
                 value += (c1 - '0') * 36;
@@ -51,7 +51,7 @@ namespace BmsParser
                 return false;
             }
 
-            var c2 = s[1];
+            var c2 = s[index + 1];
             if ('0' <= c2 && c2 <= '9')
             {
                 value += c2 - '0';
