@@ -36,7 +36,18 @@ namespace BmsParser
 
         public void Process(BmsModel model, string line, List<DecodeLog> logs)
         {
+            if (line.Length <= 1)
+                return;
+
             var top = line.Split(' ')[0].Trim();
+            if (line[0] == '%' || line[0] == '@')
+            {
+                if (top.Length == line.Trim().Length)
+                    return;
+                model.Values.Add(top[1..], line[(top.Length + 1)..]);
+                return;
+            }
+
             var word = words.FirstOrDefault(w => w.Name == top);
             if (word != default)
             {

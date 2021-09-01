@@ -174,7 +174,7 @@ namespace BmsParser
 
         public int LNObj { get; set; } = -1;
 
-        public Dictionary<string, string> Values { get; }
+        public Dictionary<string, string> Values { get; } = new();
 
         public string ToChartString()
         {

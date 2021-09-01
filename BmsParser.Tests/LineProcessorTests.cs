@@ -87,5 +87,33 @@ namespace BmsParser.Tests
             Assert.AreEqual(value, (string)typeof(BmsModel).GetProperty(propertyName).GetValue(model));
             Assert.IsFalse(logs.Any());
         }
+
+        [DataTestMethod]
+        [DataRow("@TEST1 VALUE1", "TEST1", "VALUE1")]
+        [DataRow("%TEST2 VALUE2", "TEST2", "VALUE2")]
+        public void LoadMap(string line, string key, string value)
+        {
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+
+            Assert.AreEqual(value, model.Values[key]);
+        }
+
+        [DataTestMethod]
+        [DataRow("@TEST1VALUE1")]
+        [DataRow("%TEST2VALUE2 ")]
+        public void LoadMapFailed(string line)
+        {
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+
+            Assert.IsFalse(model.Values.Any());
+        }
     }
 }
