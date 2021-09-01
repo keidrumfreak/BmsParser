@@ -17,8 +17,15 @@ namespace BmsParser
 
         new public BmsModel Decode(string path)
         {
-            var model = decode(path, path.EndsWith(".pms"), null);
-            return model;
+            try
+            {
+                var model = decode(path, path.EndsWith(".pms"), null);
+                return model;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
         public override BmsModel Decode(ChartInformation info)
@@ -116,7 +123,7 @@ namespace BmsParser
                         continue;
                     }
 
-                    if ('0' <= line[0] && line[0] <= '9')
+                    if ('0' <= line[1] && line[1] <= '9')
                     {
                         // 楽譜
                         if (!int.TryParse(line.Substring(1, 3), out var barIndex))
@@ -251,7 +258,7 @@ namespace BmsParser
             var sections = new List<Section>();
             for (var i = 0; i <= maxsec; i++)
             {
-                var section = new Section(model, prev, lines[i] ?? new List<string>(), bpmTable, stopTable, scrollTable, logs);
+                var section = new Section(model, prev, lines.TryGetValue(i, out var line) ? line : new List<string>(), bpmTable, stopTable, scrollTable, logs);
                 sections.Add(section);
                 prev = section;
             }

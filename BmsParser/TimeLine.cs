@@ -133,7 +133,7 @@ namespace BmsParser
 
         public TimeLine(double section, long time, int noteSize)
         {
-            Section = section;
+            this.section = section;
             timeMicrosecond = time;
             notes = new Note[noteSize];
             hiddenNotes = new Note[noteSize];

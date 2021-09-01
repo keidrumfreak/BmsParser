@@ -13,11 +13,13 @@ namespace BmsParser
         List<string> channelLines = new();
         double sectionNum;
         double rate = 1.0;
-        int[] poor;
+        int[] poor = Array.Empty<int>();
 
         SortedList<double, double> bpms = new();
         SortedList<double, double> stop = new();
         SortedList<double, double> scroll = new();
+
+        Channel[] noteChannels = { Channel.P1KeyBase, Channel.P2KeyBase, Channel.P1InvisibleKeyBase, Channel.P2InvisibleKeyBase, Channel.P1LongKeyBase, Channel.P2LongKeyBase, Channel.P1MineKeyBase, Channel.P2MineKeyBase };
 
         public Section(BmsModel model, Section prev, IEnumerable<string> lines, Dictionary<int, double> bpmTable,
             Dictionary<int, double> stopTable, Dictionary<int, double> scrollTable, List<DecodeLog> logs)
@@ -105,7 +107,7 @@ namespace BmsParser
 
                 Channel baseCH = 0;
                 var ch2 = -1;
-                foreach (Channel ch in Enum.GetValues(typeof(Channel)))
+                foreach (Channel ch in noteChannels)
                 {
                     if ((int)ch <= channel && channel <= (int)ch + 8)
                     {
@@ -450,7 +452,8 @@ namespace BmsParser
                     logs.Add(new DecodeLog(State.Warning, $"{model.Title}:チャンネル定義中の不正な値:{line}"));
                     continue;
                 }
-                processser((double)i / split, result);
+                if (result > 0)
+                    processser((double)i / split, result);
             }
         }
     }
