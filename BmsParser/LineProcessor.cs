@@ -71,7 +71,7 @@ namespace BmsParser
             };
         }
 
-        public void Process(BmsModel model, string line, List<DecodeLog> logs)
+        public void Process(BmsModel model, string line, List<DecodeLog> logs, Dictionary<int, int> selectedRandom = null)
         {
             if (line.Length <= 1)
                 return;

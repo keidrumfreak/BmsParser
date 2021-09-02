@@ -71,6 +71,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, "#RANDOMに数字が定義されていません"));
                             continue;
                         }
+                        randoms.AddLast(r);
                         if (selectedRandom == null)
                         {
                             crandoms.AddLast((int)(new Random().NextDouble() * r + 1));
