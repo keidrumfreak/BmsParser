@@ -38,14 +38,36 @@ namespace BmsParser
         static SequenceWord[] sequences =
         {
             new SequenceWord("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 },
+            new SequenceWord("#WAV", ValueType.Path),
+            new SequenceWord("#BMP", ValueType.Path),
+            new SequenceWord("#STOP", ValueType.Number) { NumberRange = stop => stop >= 0 },
+            new SequenceWord("#SCROLL", ValueType.Number)
         };
 
-        Dictionary<string, Dictionary<int, double>> numTables = new()
+        public Dictionary<int, double> BpmTable { get; } = new();
+
+        public Dictionary<int, double> StopTable { get; } = new();
+
+        public Dictionary<int, double> ScrollTable { get; } = new();
+
+        public Dictionary<int, string> WavTable { get; } = new();
+
+        public Dictionary<int, string> BgaTable { get; } = new();
+
+        private Dictionary<string, Dictionary<int, double>> numTables;
+        private Dictionary<string, Dictionary<int, string>> textTables;
+
+        public LineProcessor()
         {
-            { "#BPM", new Dictionary<int, double>() }
-        };
-
-        public Dictionary<int, double> BpmTable => numTables["#BPM"];
+            numTables = new Dictionary<string, Dictionary<int, double>>()
+            {
+                { "#BPM", BpmTable }, { "#STOP", StopTable }, { "#SCROLL", ScrollTable }
+            };
+            textTables = new Dictionary<string, Dictionary<int, string>>()
+            {
+                { "#WAV", WavTable }, { "#BMP", BgaTable }
+            };
+        }
 
         public void Process(BmsModel model, string line, List<DecodeLog> logs)
         {
@@ -56,7 +78,7 @@ namespace BmsParser
             var seq = sequences.FirstOrDefault(s => top.StartsWith(s.Name));
             if (seq != default && top != seq.Name)
             {
-                seq.Process(top, line, model, logs, numTables);
+                seq.Process(top, line, model, logs, this);
                 return;
             }
 
@@ -80,7 +102,7 @@ namespace BmsParser
         {
             public Func<double, bool> NumberRange { get; init; }
 
-            public void Process(string top, string line, BmsModel model, List<DecodeLog> logs, Dictionary<string, Dictionary<int, double>> numTables)
+            public void Process(string top, string line, BmsModel model, List<DecodeLog> logs, LineProcessor processor)
             {
                 if (top.Length != Name.Length + 2 || line.Length < Name.Length + 4 || !ChartDecoder.TryParseInt36(top[^2..], 0, out var seq))
                 {
@@ -97,16 +119,14 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, $"{Name}xxに数字が定義されていません : {line}"));
                             return;
                         }
+                        if (Name == "#STOP") value /= 192;
                         if (!NumberRange?.Invoke(value) ?? false)
                         {
                             logs.Add(new DecodeLog(State.Warning, $"#negative {Name[1..]}はサポートされていません : {line}"));
                             if (Name == "#BPM") return;
+                            if (Name == "#STOP") value = Math.Abs(value);
                         }
-                        if (!numTables.TryGetValue(Name, out var numTable))
-                        {
-                            numTables.Add(Name, new Dictionary<int, double>());
-                            numTable = numTables[Name];
-                        }
+                        var numTable = processor.numTables[Name];
                         if (numTable.ContainsKey(seq))
                         {
                             numTable[seq] = value;
@@ -114,6 +134,17 @@ namespace BmsParser
                         else
                         {
                             numTable.Add(seq, value);
+                        }
+                        return;
+                    case ValueType.Path:
+                        var textTable = processor.textTables[Name];
+                        if (textTable.ContainsKey(seq))
+                        {
+                            textTable[seq] = arg.Replace('\\', '/');
+                        }
+                        else
+                        {
+                            textTable.Add(seq, arg.Replace('\\', '/'));
                         }
                         return;
                 }

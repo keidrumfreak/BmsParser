@@ -157,5 +157,58 @@ namespace BmsParser.Tests
             processor.Process(model, line, logs);
             Assert.AreEqual(value, processor.BpmTable[seq]);
         }
+
+        [DataTestMethod]
+        [DataRow(@"#WAV0z Folder\wav", 35, "Folder/wav")]
+        public void LoadWavSequence(string line, int seq, string value)
+        {
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+            Assert.AreEqual(value, processor.WavTable[seq]);
+        }
+
+        [DataTestMethod]
+        [DataRow(@"#BMPA0 Folder/wav", 360, "Folder/wav")]
+        public void LoadBmpSequence(string line, int seq, string value)
+        {
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+            Assert.AreEqual(value, processor.BgaTable[seq]);
+        }
+
+        [DataTestMethod]
+        [DataRow(@"#STOP00 -394", 0, 2)]
+        public void LoadNegativeStopSequence(string line, int seq, double value)
+        {
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+            Assert.AreEqual((int)value, (int)processor.StopTable[seq]); // 誤差が出るのでintに丸めておく
+            Assert.IsTrue(logs.Any());
+            Assert.AreEqual(State.Warning, logs[0].State);
+            Assert.AreEqual($"#negative STOPはサポートされていません : {line}", logs[0].Message);
+        }
+
+        [DataTestMethod]
+        [DataRow(@"#SCROLL01 -394", 1, -394)]
+        [DataRow(@"#SCROLL05 394", 5, 394)]
+        public void LoadScrolSequence(string line, int seq, double value)
+        {
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+            Assert.AreEqual((int)value, (int)processor.ScrollTable[seq]); 
+            Assert.IsFalse(logs.Any());
+        }
     }
 }
