@@ -210,5 +210,19 @@ namespace BmsParser.Tests
             Assert.AreEqual((int)value, (int)processor.ScrollTable[seq]); 
             Assert.IsFalse(logs.Any());
         }
+
+        [DataTestMethod]
+        [DataRow("#00100:00", 1, "#00100:00")]
+        [DataRow("#99900:00", 999, "#99900:00")]
+        public void LoadBarLine(string line, int seq, string value)
+        {
+            var model = new BmsModel();
+            var logs = new List<DecodeLog>();
+
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
+            Assert.AreEqual(value, processor.BarTable[seq][0]);
+            Assert.IsFalse(logs.Any());
+        }
     }
 }

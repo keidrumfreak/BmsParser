@@ -54,6 +54,8 @@ namespace BmsParser
 
         public Dictionary<int, string> BgaTable { get; } = new();
 
+        public Dictionary<int, List<string>> BarTable { get; } = new();
+
         private Dictionary<string, Dictionary<int, double>> numTables;
         private Dictionary<string, Dictionary<int, string>> textTables;
 
@@ -73,6 +75,23 @@ namespace BmsParser
         {
             if (line.Length <= 1)
                 return;
+
+            if (line[0] == '#' && '0' <= line[1] && line[1] <= '9')
+            {
+                // 楽譜
+                if (!int.TryParse(line[1..4], out var barNum))
+                {
+                    logs.Add(new DecodeLog(State.Warning, $"小節に数字が定義されていません : {line}"));
+                    return;
+                }
+                if (!BarTable.TryGetValue(barNum, out var bar))
+                {
+                    bar = new List<string>();
+                    BarTable.Add(barNum, bar);
+                }
+                bar.Add(line);
+                return;
+            }
 
             var top = line.Split(' ')[0].Trim();
             var seq = sequences.FirstOrDefault(s => top.StartsWith(s.Name));
