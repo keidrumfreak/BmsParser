@@ -97,7 +97,7 @@ namespace BmsParser
         /// </summary>
         public TimeLine[] TimeLines { get; set; } = Array.Empty<TimeLine>();
 
-        public IEnumerable<long> AllTimes => TimeLines.Select(t => t.Time).ToArray();
+        public IEnumerable<int> AllTimes => TimeLines.Select(t => t.Time).ToArray();
 
         public long LastNoteMilliTime => TimeLines
             .LastOrDefault(tl => Enumerable.Range(0, Mode.Key)

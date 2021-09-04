@@ -38,7 +38,7 @@ namespace BmsParser
 
         public long TimeMilliSeccond => TimeMicrosecond / 1000;
 
-        public long Time => (int)(TimeMicrosecond / 1000);
+        public int Time => (int)(TimeMicrosecond / 1000);
 
         double section;
         /// <summary>

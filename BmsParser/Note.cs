@@ -49,6 +49,10 @@ namespace BmsParser
         /// </summary>
         public long TimeMicrosecond { get; set; }
 
+        public long TimeMillisccond => TimeMicrosecond / 1000;
+
+        public int Time => (int)(TimeMicrosecond / 1000);
+
         private List<Note> layeredNotes;
 
         /// <summary>
