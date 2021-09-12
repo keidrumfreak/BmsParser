@@ -380,7 +380,7 @@ namespace BmsParser
                         {
                             var tl = getTimeLine(sectionNum + rate * pos, tlCache);
                             var inSideLN = tl.ExistNote(key);
-                            if (!inSideLN && lnList[key] == null)
+                            if (!inSideLN && lnList[key] != null)
                             {
                                 inSideLN = lnList[key].Any(ln => ln.Section <= tl.Section && tl.Section <= ln.Pair.Section);
                             }
