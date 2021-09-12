@@ -93,7 +93,7 @@ namespace BmsParser
                 return;
             }
 
-            var top = line.Split(' ')[0].Trim();
+            var top = line.Split(' ')[0].Trim().ToUpper();
             var seq = sequences.FirstOrDefault(s => top.StartsWith(s.Name));
             if (seq != default && top != seq.Name)
             {
