@@ -49,7 +49,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, $"小節の拡大率が不正です : {line}"));
                         break;
                     case Channel.BpmChange:     // BPM変化
-                        processData(line, (pos, data) => bpms.Add(pos, (double)(data / 36) * 16 + (data % 36)));
+                        processData(line, (pos, data) => { if (!bpms.Keys.Contains(pos)) bpms.Add(pos, (double)(data / 36) * 16 + (data % 36)); });
                         break;
                     case Channel.PoorPlay:      // POORアニメーション
                         poor = splitData(line).ToArray();
@@ -78,7 +78,8 @@ namespace BmsParser
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のBPM変化を参照しています : {data}"));
                                 return;
                             }
-                            bpms.Add(pos, bpm);
+                            if (!bpms.Keys.Contains(pos))
+                                bpms.Add(pos, bpm);
                         });
                         break;
                     case Channel.Stop:          // ストップシーケンス
@@ -89,7 +90,8 @@ namespace BmsParser
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のSTOPを参照しています : {data}"));
                                 return;
                             }
-                            stop.Add(pos, st);
+                            if (!stop.Keys.Contains(pos))
+                                stop.Add(pos, st);
                         });
                         break;
                     case Channel.Scroll:
@@ -100,7 +102,8 @@ namespace BmsParser
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のSCROLLを参照しています : {data}"));
                                 return;
                             }
-                            scroll.Add(pos, st);
+                            if (!scroll.Keys.Contains(pos))
+                                scroll.Add(pos, st);
                         });
                         break;
                 }
