@@ -59,7 +59,7 @@ namespace BmsParser
             var maxsec = 0;
             var lines = new Dictionary<int, List<string>>();
 
-            foreach (var line in File.ReadAllLines(path).Where(l => l.Length > 1))
+            foreach (var line in File.ReadAllLines(path, Encoding.GetEncoding("shift-jis")).Where(l => l.Length > 1))
             {
                 if (line[0] == '#')
                 {
