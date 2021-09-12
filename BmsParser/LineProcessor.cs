@@ -112,6 +112,8 @@ namespace BmsParser
             {
                 if (top.Length == line.Trim().Length)
                     return;
+                if (model.Values.ContainsKey(top[1..]))
+                    return;
                 model.Values.Add(top[1..], line[(top.Length + 1)..]);
                 return;
             }

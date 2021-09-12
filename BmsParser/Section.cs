@@ -49,7 +49,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, $"小節の拡大率が不正です : {line}"));
                         break;
                     case Channel.BpmChange:     // BPM変化
-                        processData(line, (pos, data) => { if (!bpms.Keys.Contains(pos)) bpms.Add(pos, (double)(data / 36) * 16 + (data % 36)); });
+                        processData(line, (pos, data) => { if (!bpms.ContainsKey(pos)) bpms.Add(pos, (double)(data / 36) * 16 + (data % 36)); });
                         break;
                     case Channel.PoorPlay:      // POORアニメーション
                         poor = splitData(line).ToArray();
@@ -78,7 +78,7 @@ namespace BmsParser
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のBPM変化を参照しています : {data}"));
                                 return;
                             }
-                            if (!bpms.Keys.Contains(pos))
+                            if (!bpms.ContainsKey(pos))
                                 bpms.Add(pos, bpm);
                         });
                         break;
@@ -90,7 +90,7 @@ namespace BmsParser
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のSTOPを参照しています : {data}"));
                                 return;
                             }
-                            if (!stop.Keys.Contains(pos))
+                            if (!stop.ContainsKey(pos))
                                 stop.Add(pos, st);
                         });
                         break;
@@ -102,7 +102,7 @@ namespace BmsParser
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のSCROLLを参照しています : {data}"));
                                 return;
                             }
-                            if (!scroll.Keys.Contains(pos))
+                            if (!scroll.ContainsKey(pos))
                                 scroll.Add(pos, st);
                         });
                         break;
