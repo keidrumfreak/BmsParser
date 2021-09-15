@@ -19,7 +19,20 @@ namespace BmsParser
         {
             try
             {
-                var model = decode(path, path.EndsWith(".pms"), null);
+                var model = decode(path, path.EndsWith(".pms"), null, File.ReadAllLines(path, Encoding.GetEncoding("shift-jis")));
+                return model;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+        public BmsModel Decode(string path, string[] lines)
+        {
+            try
+            {
+                var model = decode(path, path.EndsWith(".pms"), null, lines);
                 return model;
             }
             catch (Exception ex)
@@ -31,10 +44,10 @@ namespace BmsParser
         public override BmsModel Decode(ChartInformation info)
         {
             LNType = info.LNType;
-            return decode(info.Path, info.Path.EndsWith(".pms"), info.SelectedRandoms);
+            return decode(info.Path, info.Path.EndsWith(".pms"), info.SelectedRandoms, File.ReadAllLines(info.Path, Encoding.GetEncoding("shift-jis")));
         }
 
-        private BmsModel decode(string path, bool isPms, int[] selectedRandom)
+        private BmsModel decode(string path, bool isPms, int[] selectedRandom, string[] fileLines)
         {
             logs.Clear();
             var time = DateTime.Now;
@@ -59,7 +72,7 @@ namespace BmsParser
             var maxsec = 0;
             var lines = new Dictionary<int, List<string>>();
 
-            foreach (var line in File.ReadAllLines(path, Encoding.GetEncoding("shift-jis")).Where(l => l.Length > 1))
+            foreach (var line in fileLines.Where(l => l.Length > 1))
             {
                 if (line[0] == '#')
                 {
