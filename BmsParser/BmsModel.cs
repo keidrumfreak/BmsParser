@@ -100,8 +100,9 @@ namespace BmsParser
         public IEnumerable<int> AllTimes => TimeLines.Select(t => t.Time).ToArray();
 
         public long LastNoteMilliTime => TimeLines
-            .LastOrDefault(tl => Enumerable.Range(0, Mode.Key)
-                .Any(lane => tl.ExistNote(lane)))?.TimeMilliSeccond ?? 0;
+            .Where(tl => Enumerable.Range(0, Mode.Key)
+                .Any(lane => tl.ExistNote(lane))).OrderBy(t => t.TimeMilliSeccond)?
+            .LastOrDefault()?.TimeMilliSeccond ?? 0;
 
         public int LastTime => (int)LastNoteMilliTime;
 
