@@ -87,7 +87,7 @@ namespace BmsParser
                 if (!BarTable.TryGetValue(barNum, out var bar))
                 {
                     bar = new List<string>();
-                    BarTable.Add(barNum, bar);
+                    BarTable.Put(barNum, bar);
                 }
                 bar.Add(line);
                 return;
@@ -114,7 +114,7 @@ namespace BmsParser
                     return;
                 if (model.Values.ContainsKey(top[1..]))
                     return;
-                model.Values.Add(top[1..], line[(top.Length + 1)..]);
+                model.Values.Put(top[1..], line[(top.Length + 1)..]);
                 return;
             }
         }
@@ -148,25 +148,11 @@ namespace BmsParser
                             if (Name == "#STOP") value = Math.Abs(value);
                         }
                         var numTable = processor.numTables[Name];
-                        if (numTable.ContainsKey(seq))
-                        {
-                            numTable[seq] = value;
-                        }
-                        else
-                        {
-                            numTable.Add(seq, value);
-                        }
+                        numTable.Put(seq, value);
                         return;
                     case ValueType.Path:
                         var textTable = processor.textTables[Name];
-                        if (textTable.ContainsKey(seq))
-                        {
-                            textTable[seq] = arg.Replace('\\', '/');
-                        }
-                        else
-                        {
-                            textTable.Add(seq, arg.Replace('\\', '/'));
-                        }
+                        textTable.Put(seq, arg.Replace('\\', '/'));
                         return;
                 }
             }

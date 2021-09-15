@@ -187,7 +187,7 @@ namespace BmsParser
                                 logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
                                 continue;
                             }
-                            bpmTable.Add(seq, bpm);
+                            bpmTable.Put(seq, bpm);
                         }
                     }
                     else if (line.StartsWith("#WAV"))
@@ -236,7 +236,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, $"#negative STOPはサポートされていません : {line}"));
                             stop = Math.Abs(stop);
                         }
-                        stopTable.Add(seq, stop);
+                        stopTable.Put(seq, stop);
                     }
                     else if (line.StartsWith("#SCROLL"))
                     {
@@ -250,7 +250,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, $"#STOPxxに数字が定義されていません : {line}"));
                             continue;
                         }
-                        scrollTable.Add(seq, scroll);
+                        scrollTable.Put(seq, scroll);
                     }
                     else
                     {
