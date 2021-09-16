@@ -17,28 +17,14 @@ namespace BmsParser
 
         new public BmsModel Decode(string path)
         {
-            try
-            {
-                var model = decode(path, path.EndsWith(".pms"), null, File.ReadAllLines(path, Encoding.GetEncoding("shift-jis")));
-                return model;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
+            var model = decode(path, path.EndsWith(".pms"), null, File.ReadAllLines(path, Encoding.GetEncoding("shift-jis")));
+            return model;
         }
 
         public BmsModel Decode(string path, string[] lines)
         {
-            try
-            {
-                var model = decode(path, path.EndsWith(".pms"), null, lines);
-                return model;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
+            var model = decode(path, path.EndsWith(".pms"), null, lines);
+            return model;
         }
 
         public override BmsModel Decode(ChartInformation info)
@@ -52,16 +38,16 @@ namespace BmsParser
             logs.Clear();
             var time = DateTime.Now;
             var model = new BmsModel();
-            var scrollTable = new Dictionary<int, double>();
-            var stopTable = new Dictionary<int, double>();
-            var bpmTable = new Dictionary<int, double>();
-            var wm = new int[36 * 36];
-            Array.Fill(wm, -2);
-            var wavList = new List<string>();
+            //var scrollTable = new Dictionary<int, double>();
+            //var stopTable = new Dictionary<int, double>();
+            //var bpmTable = new Dictionary<int, double>();
+            //var wm = new int[36 * 36];
+            //Array.Fill(wm, -2);
+            //var wavList = new List<string>();
 
-            var bm = new int[36 * 36];
-            Array.Fill(bm, -2);
-            var bgaList = new List<string>();
+            //var bm = new int[36 * 36];
+            //Array.Fill(bm, -2);
+            //var bgaList = new List<string>();
 
             model.Mode = isPms ? Mode.Popn9K : Mode.Beat5K;
 
@@ -69,8 +55,10 @@ namespace BmsParser
             var srandoms = new LinkedList<int>();
             var crandoms = new LinkedList<int>();
             var skip = new LinkedList<bool>();
-            var maxsec = 0;
-            var lines = new Dictionary<int, List<string>>();
+            //var maxsec = 0;
+            //var lines = new Dictionary<int, List<string>>();
+            var processor = new LineProcessor();
+            var tasks = new List<Task>();
 
             foreach (var line in fileLines.Where(l => l.Length > 1))
             {
@@ -137,142 +125,141 @@ namespace BmsParser
                         continue;
                     }
 
-                    if ('0' <= line[1] && line[1] <= '9')
-                    {
-                        // 楽譜
-                        if (!int.TryParse(line.Substring(1, 3), out var barIndex))
-                        {
-                            logs.Add(new DecodeLog(State.Warning, $"小節に数字が定義されていません : {line}"));
-                            continue;
-                        }
+                    //if ('0' <= line[1] && line[1] <= '9')
+                    //{
+                    //    // 楽譜
+                    //    if (!int.TryParse(line.Substring(1, 3), out var barIndex))
+                    //    {
+                    //        logs.Add(new DecodeLog(State.Warning, $"小節に数字が定義されていません : {line}"));
+                    //        continue;
+                    //    }
 
-                        if (!lines.TryGetValue(barIndex, out var l))
-                        {
-                            l = new List<string>();
-                        }
+                    //    if (!lines.TryGetValue(barIndex, out var l))
+                    //    {
+                    //        l = new List<string>();
+                    //    }
 
-                        l.Add(line);
-                        lines[barIndex] = l;
+                    //    l.Add(line);
+                    //    lines[barIndex] = l;
 
-                        maxsec = maxsec > barIndex ? maxsec : barIndex;
-                    }
-                    else if (line.StartsWith("#BPM"))
-                    {
-                        // BPM
-                        if (line[4] == ' ')
-                        {
-                            var arg = line[5..].Trim();
-                            if (!double.TryParse(arg, out var bpm))
-                            {
-                                logs.Add(new DecodeLog(State.Warning, $"#BPMに数字が定義されていません : {line}"));
-                                continue;
-                            }
-                            if (bpm <= 0)
-                            {
-                                logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
-                                continue;
-                            }
-                            model.Bpm = bpm;
-                        }
-                        else
-                        {
-                            var arg = line[7..].Trim();
-                            if (!double.TryParse(arg, out var bpm) || !TryParseInt36(line, 4, out var seq))
-                            {
-                                logs.Add(new DecodeLog(State.Warning, $"#BPMxxに数字が定義されていません : {line}"));
-                                continue;
-                            }
-                            if (bpm <= 0)
-                            {
-                                logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
-                                continue;
-                            }
-                            bpmTable.Put(seq, bpm);
-                        }
-                    }
-                    else if (line.StartsWith("#WAV"))
-                    {
-                        // 音源
-                        if (line.Length < 8 || !TryParseInt36(line, 4, out var seq))
-                        {
-                            logs.Add(new DecodeLog(State.Warning, $"#WAVxxは不十分な定義です : {line}"));
-                            continue;
-                        }
+                    //    maxsec = maxsec > barIndex ? maxsec : barIndex;
+                    //}
+                    //else if (line.StartsWith("#BPM"))
+                    //{
+                    //    // BPM
+                    //    if (line[4] == ' ')
+                    //    {
+                    //        var arg = line[5..].Trim();
+                    //        if (!double.TryParse(arg, out var bpm))
+                    //        {
+                    //            logs.Add(new DecodeLog(State.Warning, $"#BPMに数字が定義されていません : {line}"));
+                    //            continue;
+                    //        }
+                    //        if (bpm <= 0)
+                    //        {
+                    //            logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
+                    //            continue;
+                    //        }
+                    //        model.Bpm = bpm;
+                    //    }
+                    //    else
+                    //    {
+                    //        var arg = line[7..].Trim();
+                    //        if (!double.TryParse(arg, out var bpm) || !TryParseInt36(line, 4, out var seq))
+                    //        {
+                    //            logs.Add(new DecodeLog(State.Warning, $"#BPMxxに数字が定義されていません : {line}"));
+                    //            continue;
+                    //        }
+                    //        if (bpm <= 0)
+                    //        {
+                    //            logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
+                    //            continue;
+                    //        }
+                    //        bpmTable.Put(seq, bpm);
+                    //    }
+                    //}
+                    //else if (line.StartsWith("#WAV"))
+                    //{
+                    //    // 音源
+                    //    if (line.Length < 8 || !TryParseInt36(line, 4, out var seq))
+                    //    {
+                    //        logs.Add(new DecodeLog(State.Warning, $"#WAVxxは不十分な定義です : {line}"));
+                    //        continue;
+                    //    }
 
-                        var fileName = line[7..].Trim().Replace('\\', '/');
+                    //    var fileName = line[7..].Trim().Replace('\\', '/');
 
-                        wm[seq] = wavList.Count;
-                        wavList.Add(fileName);
-                    }
-                    else if (line.StartsWith("#BMP"))
-                    {
-                        // BGAファイル
-                        if (line.Length < 8 || !TryParseInt36(line, 4, out var seq))
-                        {
-                            logs.Add(new DecodeLog(State.Warning, $"#BMPxxは不十分な定義です : {line}"));
-                            continue;
-                        }
+                    //    model.WavList.Put(seq, fileName);
+                    //}
+                    //else if (line.StartsWith("#BMP"))
+                    //{
+                    //    // BGAファイル
+                    //    if (line.Length < 8 || !TryParseInt36(line, 4, out var seq))
+                    //    {
+                    //        logs.Add(new DecodeLog(State.Warning, $"#BMPxxは不十分な定義です : {line}"));
+                    //        continue;
+                    //    }
 
-                        var fileName = line[7..].Trim().Replace('\\', '/');
+                    //    var fileName = line[7..].Trim().Replace('\\', '/');
 
-                        bm[seq] = bgaList.Count;
-                        bgaList.Add(fileName);
-                    }
-                    else if (line.StartsWith("#STOP"))
-                    {
-                        if (line.Length < 9)
-                        {
-                            logs.Add(new DecodeLog(State.Warning, $"#STOPxxは不十分な定義です : {line}"));
-                            continue;
-                        }
-                        if (!double.TryParse(line[8..].Trim(), out var stop) || !TryParseInt36(line, 5, out var seq))
-                        {
-                            logs.Add(new DecodeLog(State.Warning, $"#STOPxxに数字が定義されていません : {line}"));
-                            continue;
-                        }
-                        stop /= 192;
-                        if (stop < 0)
-                        {
-                            logs.Add(new DecodeLog(State.Warning, $"#negative STOPはサポートされていません : {line}"));
-                            stop = Math.Abs(stop);
-                        }
-                        stopTable.Put(seq, stop);
-                    }
-                    else if (line.StartsWith("#SCROLL"))
-                    {
-                        if (line.Length < 11)
-                        {
-                            logs.Add(new DecodeLog(State.Warning, $"#SCROLLxxは不十分な定義です : {line}"));
-                            continue;
-                        }
-                        if (!double.TryParse(line[10..].Trim(), out var scroll) || !TryParseInt36(line, 7, out var seq))
-                        {
-                            logs.Add(new DecodeLog(State.Warning, $"#STOPxxに数字が定義されていません : {line}"));
-                            continue;
-                        }
-                        scrollTable.Put(seq, scroll);
-                    }
-                    else
-                    {
-                        var processor = new LineProcessor();
-                        processor.Process(model, line, logs);
-                    }
+                    //    model.BgaList.Put(seq, fileName);
+                    //}
+                    //else if (line.StartsWith("#STOP"))
+                    //{
+                    //    if (line.Length < 9)
+                    //    {
+                    //        logs.Add(new DecodeLog(State.Warning, $"#STOPxxは不十分な定義です : {line}"));
+                    //        continue;
+                    //    }
+                    //    if (!double.TryParse(line[8..].Trim(), out var stop) || !TryParseInt36(line, 5, out var seq))
+                    //    {
+                    //        logs.Add(new DecodeLog(State.Warning, $"#STOPxxに数字が定義されていません : {line}"));
+                    //        continue;
+                    //    }
+                    //    stop /= 192;
+                    //    if (stop < 0)
+                    //    {
+                    //        logs.Add(new DecodeLog(State.Warning, $"#negative STOPはサポートされていません : {line}"));
+                    //        stop = Math.Abs(stop);
+                    //    }
+                    //    stopTable.Put(seq, stop);
+                    //}
+                    //else if (line.StartsWith("#SCROLL"))
+                    //{
+                    //    if (line.Length < 11)
+                    //    {
+                    //        logs.Add(new DecodeLog(State.Warning, $"#SCROLLxxは不十分な定義です : {line}"));
+                    //        continue;
+                    //    }
+                    //    if (!double.TryParse(line[10..].Trim(), out var scroll) || !TryParseInt36(line, 7, out var seq))
+                    //    {
+                    //        logs.Add(new DecodeLog(State.Warning, $"#STOPxxに数字が定義されていません : {line}"));
+                    //        continue;
+                    //    }
+                    //    scrollTable.Put(seq, scroll);
+                    //}
+                    //else
+                    //{
+                    //var processor = new LineProcessor();
+                    tasks.Add(Task.Run(() => processor.Process(model, line, logs)));
+                    processor.Process(model, line, logs);
+                    //}
                 }
                 else if (line[0] == '%' || line[0] == '@')
                 {
-                    var processor = new LineProcessor();
+                    //var processor = new LineProcessor();
+                    tasks.Add(Task.Run(() => processor.Process(model, line, logs)));
                     processor.Process(model, line, logs);
                 }
             }
 
-            model.WavList = wavList.ToArray();
-            model.BgaList = bgaList.ToArray();
+            Task.WaitAll(tasks.ToArray());
 
             var prev = default(Section);
             var sections = new List<Section>();
-            for (var i = 0; i <= maxsec; i++)
+            for (var i = 0; i <= processor.BarTable.Keys.Max(); i++)
             {
-                var section = new Section(model, prev, lines.TryGetValue(i, out var line) ? line : new List<string>(), bpmTable, stopTable, scrollTable, logs);
+                var section = new Section(model, prev, processor, i, logs);
                 sections.Add(section);
                 prev = section;
             }
@@ -285,7 +272,7 @@ namespace BmsParser
             timeLines.Add(0.0, new TimeLineCache(0.0, baseTL));
             foreach (var section in sections)
             {
-                section.MakeTimeLine(wm, bm, timeLines, lnList, lnEndStatus);
+                section.MakeTimeLine(model.WavList, model.BgaList, timeLines, lnList, lnEndStatus);
             }
 
             var tl = timeLines.Values.Select(t => t.TimeLine).ToArray();

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BmsParser
 {
-    public class Section
+    class Section
     {
         BmsModel model;
         List<DecodeLog> logs;
@@ -21,15 +21,17 @@ namespace BmsParser
 
         Channel[] noteChannels = { Channel.P1KeyBase, Channel.P2KeyBase, Channel.P1InvisibleKeyBase, Channel.P2InvisibleKeyBase, Channel.P1LongKeyBase, Channel.P2LongKeyBase, Channel.P1MineKeyBase, Channel.P2MineKeyBase };
 
-        public Section(BmsModel model, Section prev, IEnumerable<string> lines, Dictionary<int, double> bpmTable,
-            Dictionary<int, double> stopTable, Dictionary<int, double> scrollTable, List<DecodeLog> logs)
+        public Section(BmsModel model, Section prev, LineProcessor processor, int bar,
+            //IEnumerable<string> lines, Dictionary<int, double> bpmTable,
+            //Dictionary<int, double> stopTable, Dictionary<int, double> scrollTable,
+            List<DecodeLog> logs)
         {
             this.model = model;
             this.logs = logs;
 
             sectionNum = prev == null ? 0 : (prev.sectionNum + prev.rate);
 
-            foreach (var line in lines)
+            foreach (var line in processor.BarTable.TryGetValue(bar, out var lines) ? lines : new ())
             {
                 if (!ChartDecoder.TryParseInt36(line, 4, out var channel))
                     channel = -1;
@@ -73,7 +75,7 @@ namespace BmsParser
                     case Channel.BpmChangeExtend:   // BPM変化(拡張)
                         processData(line, (pos, data) =>
                         {
-                            if (!bpmTable.TryGetValue(data, out var bpm))
+                            if (!processor.BpmTable.TryGetValue(data, out var bpm))
                             {
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のBPM変化を参照しています : {data}"));
                                 return;
@@ -85,7 +87,7 @@ namespace BmsParser
                     case Channel.Stop:          // ストップシーケンス
                         processData(line, (pos, data) =>
                         {
-                            if (!stopTable.TryGetValue(data, out var st))
+                            if (!processor.StopTable.TryGetValue(data, out var st))
                             {
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のSTOPを参照しています : {data}"));
                                 return;
@@ -97,7 +99,7 @@ namespace BmsParser
                     case Channel.Scroll:
                         processData(line, (pos, data) =>
                         {
-                            if (!scrollTable.TryGetValue(data, out var st))
+                            if (!processor.ScrollTable.TryGetValue(data, out var st))
                             {
                                 logs.Add(new DecodeLog(State.Warning, $"未定義のSCROLLを参照しています : {data}"));
                                 return;
@@ -149,7 +151,7 @@ namespace BmsParser
         int[] beat7ChannelAssign = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
         int[] popnChannelAssign = { 0, 1, 2, 3, 4, -1, -1, -1, -1, -1, 5, 6, 7, 8, -1, -1, -1, -1 };
 
-        public void MakeTimeLine(int[] wavMap, int[] bgaMap, SortedDictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
+        public void MakeTimeLine(Dictionary<int, string> wavMap, Dictionary<int, string> bgaMap, SortedDictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
         {
             var baseTL = getTimeLine(sectionNum, tlCache);
             baseTL.IsSectionLine = true;
@@ -160,9 +162,9 @@ namespace BmsParser
                 var poorTime = 500;
                 for (var i = 0; i < poor.Length; i++)
                 {
-                    if (bgaMap[poor[i]] != -2)
+                    if (bgaMap.ContainsKey(poor[i]))
                     {
-                        poors[i] = new Sequece(i * poorTime / poor.Length, bgaMap[poor[i]]);
+                        poors[i] = new Sequece(i * poorTime / poor.Length, poor[i]);
                     }
                     else
                     {
@@ -251,7 +253,7 @@ namespace BmsParser
                                 logs.Add(new DecodeLog(State.Warning, $"通常ノート追加時に衝突が発生しました : {key + 1}:{tl.Time}"));
                             if (data != model.LNObj)
                             {
-                                tl.SetNote(key, new NormalNote(wavMap[data]));
+                                tl.SetNote(key, new NormalNote(data));
                                 return;
                             }
 
@@ -298,7 +300,7 @@ namespace BmsParser
                         });
                         break;
                     case Channel.P1InvisibleKeyBase:
-                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).SetHiddenNote(key, new NormalNote(wavMap[data])));
+                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).SetHiddenNote(key, new NormalNote(data)));
                         break;
                     case Channel.P1LongKeyBase:
                         processData(line, (pos, data) =>
@@ -312,7 +314,7 @@ namespace BmsParser
                             {
                                 if (startLN[key] == null)
                                 {
-                                    var ln = new LongNote(wavMap[data]);
+                                    var ln = new LongNote(data);
                                     ln.Section = double.MinValue;
                                     startLN[key] = ln;
                                     logs.Add(new DecodeLog(State.Warning, $"LN内にLN開始ノートを定義しようとしています : {key + 1} - Section : {tl.Section} - Time(ms):{tl.Time}"));
@@ -336,10 +338,10 @@ namespace BmsParser
                                 {
                                     var note = tl.GetNote(key);
                                     logs.Add(new DecodeLog(State.Warning, $"LN開始位置に通常ノートが存在します。レーン: {key + 1} - Time(ms):{tl.Time}"));
-                                    if (note is NormalNote && note.Wav != wavMap[data])
+                                    if (note is NormalNote && note.Wav != data)
                                         tl.AddBackGroundNote(note);
                                 }
-                                var ln = new LongNote(wavMap[data]);
+                                var ln = new LongNote(data);
                                 tl.SetNote(key, ln);
                             }
                             else if (startLN[key].Section == double.MinValue)
@@ -358,7 +360,7 @@ namespace BmsParser
                                     {
                                         var note = startLN[key];
                                         note.Type = model.LNMode;
-                                        var noteEnd = new LongNote(startLN[key].Wav != wavMap[data] ? wavMap[data] : -2);
+                                        var noteEnd = new LongNote(startLN[key].Wav != data ? data : -2);
                                         tl.SetNote(key, noteEnd);
                                         if (lnList[key] == null)
                                             lnList[key] = new List<LongNote>();
@@ -389,7 +391,7 @@ namespace BmsParser
                             }
                             if (!inSideLN)
                             {
-                                tl.SetNote(key, new MineNote(wavMap[0], data));
+                                tl.SetNote(key, new MineNote(wavMap.ContainsKey(0) ? 0 : -2, data));
                             }
                             else
                             {
@@ -398,13 +400,13 @@ namespace BmsParser
                         });
                         break;
                     case Channel.LaneAutoPlay:
-                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).AddBackGroundNote(new NormalNote(wavMap[data])));
+                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).AddBackGroundNote(new NormalNote(data)));
                         break;
                     case Channel.BgaPlay:
-                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).BgaID = bgaMap[data]);
+                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).BgaID = data);
                         break;
                     case Channel.LayerPlay:
-                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).LayerID = bgaMap[data]);
+                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).LayerID = data);
                         break;
                 }
             }

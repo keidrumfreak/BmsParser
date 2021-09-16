@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -44,32 +45,13 @@ namespace BmsParser
             new SequenceWord("#SCROLL", ValueType.Number)
         };
 
-        public Dictionary<int, double> BpmTable { get; } = new();
+        public ConcurrentDictionary<int, double> BpmTable { get; } = new();
 
-        public Dictionary<int, double> StopTable { get; } = new();
+        public ConcurrentDictionary<int, double> StopTable { get; } = new();
 
-        public Dictionary<int, double> ScrollTable { get; } = new();
+        public ConcurrentDictionary<int, double> ScrollTable { get; } = new();
 
-        public Dictionary<int, string> WavTable { get; } = new();
-
-        public Dictionary<int, string> BgaTable { get; } = new();
-
-        public Dictionary<int, List<string>> BarTable { get; } = new();
-
-        private Dictionary<string, Dictionary<int, double>> numTables;
-        private Dictionary<string, Dictionary<int, string>> textTables;
-
-        public LineProcessor()
-        {
-            numTables = new Dictionary<string, Dictionary<int, double>>()
-            {
-                { "#BPM", BpmTable }, { "#STOP", StopTable }, { "#SCROLL", ScrollTable }
-            };
-            textTables = new Dictionary<string, Dictionary<int, string>>()
-            {
-                { "#WAV", WavTable }, { "#BMP", BgaTable }
-            };
-        }
+        public ConcurrentDictionary<int, ConcurrentBag<string>> BarTable { get; } = new();
 
         public void Process(BmsModel model, string line, List<DecodeLog> logs, Dictionary<int, int> selectedRandom = null)
         {
@@ -84,12 +66,15 @@ namespace BmsParser
                     logs.Add(new DecodeLog(State.Warning, $"小節に数字が定義されていません : {line}"));
                     return;
                 }
-                if (!BarTable.TryGetValue(barNum, out var bar))
+                lock (BarTable)
                 {
-                    bar = new List<string>();
-                    BarTable.Put(barNum, bar);
+                    if (!BarTable.TryGetValue(barNum, out var bar))
+                    {
+                        bar = new();
+                        BarTable.Put(barNum, bar);
+                    }
+                    bar.Add(line);
                 }
-                bar.Add(line);
                 return;
             }
 
@@ -147,11 +132,22 @@ namespace BmsParser
                             if (Name == "#BPM") return;
                             if (Name == "#STOP") value = Math.Abs(value);
                         }
-                        var numTable = processor.numTables[Name];
+                        var numTable = Name switch
+                        {
+                            "#STOP" => processor.StopTable,
+                            "#BPM" => processor.BpmTable,
+                            "#SCROLL" => processor.ScrollTable,
+                            _ => throw new NotSupportedException()
+                        };
                         numTable.Put(seq, value);
                         return;
                     case ValueType.Path:
-                        var textTable = processor.textTables[Name];
+                        var textTable = Name switch
+                        {
+                            "#BMP" => model.BgaList,
+                            "#WAV" => model.WavList,
+                            _ => throw new NotSupportedException()
+                        };
                         textTable.Put(seq, arg.Replace('\\', '/'));
                         return;
                 }

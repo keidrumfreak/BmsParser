@@ -167,7 +167,7 @@ namespace BmsParser.Tests
 
             var processor = new LineProcessor();
             processor.Process(model, line, logs);
-            Assert.AreEqual(value, processor.WavTable[seq]);
+            Assert.AreEqual(value, model.WavList[seq]);
         }
 
         [DataTestMethod]
@@ -179,7 +179,7 @@ namespace BmsParser.Tests
 
             var processor = new LineProcessor();
             processor.Process(model, line, logs);
-            Assert.AreEqual(value, processor.BgaTable[seq]);
+            Assert.AreEqual(value, model.BgaList[seq]);
         }
 
         [DataTestMethod]
@@ -221,7 +221,7 @@ namespace BmsParser.Tests
 
             var processor = new LineProcessor();
             processor.Process(model, line, logs);
-            Assert.AreEqual(value, processor.BarTable[seq][0]);
+            Assert.AreEqual(value, processor.BarTable[seq].First());
             Assert.IsFalse(logs.Any());
         }
     }

@@ -101,8 +101,7 @@ namespace BmsParser
 
         public long LastNoteMilliTime => TimeLines
             .Where(tl => Enumerable.Range(0, Mode.Key)
-                .Any(lane => tl.ExistNote(lane))).OrderBy(t => t.TimeMilliSeccond)?
-            .LastOrDefault()?.TimeMilliSeccond ?? 0;
+                .Any(lane => tl.ExistNote(lane))).Max(t => t.TimeMilliSeccond);
 
         public int LastTime => (int)LastNoteMilliTime;
 
@@ -133,12 +132,12 @@ namespace BmsParser
         /// <summary>
         /// WAV定義のIDとファイル名のマップ
         /// </summary>
-        public string[] WavList { get; set; } = Array.Empty<string>();
+        public Dictionary<int,string> WavList { get; set; } = new();
 
         /// <summary>
         /// BGA定義のIDとファイル名のマップ
         /// </summary>
-        public string[] BgaList { get; set; } = Array.Empty<string>();
+        public Dictionary<int,string> BgaList { get; set; } = new();
 
         public ChartInformation ChartInformation { get; set; }
 

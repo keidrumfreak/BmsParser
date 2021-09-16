@@ -8,15 +8,18 @@ namespace BmsParser
 {
     static class Utility
     {
-        public static void Put<TKey, TValue>(this Dictionary<TKey, TValue> dic, TKey key, TValue value)
+        public static void Put<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue value)
         {
-            if (dic.ContainsKey(key))
+            lock (dic)
             {
-                dic[key] = value;
-            }
-            else
-            {
-                dic.Add(key, value);
+                if (dic.ContainsKey(key))
+                {
+                    dic[key] = value;
+                }
+                else
+                {
+                    dic.Add(key, value);
+                }
             }
         }
     }
