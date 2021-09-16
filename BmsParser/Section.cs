@@ -33,7 +33,7 @@ namespace BmsParser
 
             foreach (var line in processor.BarTable.TryGetValue(bar, out var lines) ? lines : new ())
             {
-                if (!ChartDecoder.TryParseInt36(line, 4, out var channel))
+                if (!Utility.TryParseInt36(line[4..6], out var channel))
                     channel = -1;
 
                 switch ((Channel)channel)
@@ -151,7 +151,7 @@ namespace BmsParser
         int[] beat7ChannelAssign = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
         int[] popnChannelAssign = { 0, 1, 2, 3, 4, -1, -1, -1, -1, -1, 5, 6, 7, 8, -1, -1, -1, -1 };
 
-        public void MakeTimeLine(Dictionary<int, string> wavMap, Dictionary<int, string> bgaMap, SortedDictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
+        public void MakeTimeLine(IDictionary<int, string> wavMap, IDictionary<int, string> bgaMap, SortedDictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
         {
             var baseTL = getTimeLine(sectionNum, tlCache);
             baseTL.IsSectionLine = true;
@@ -223,7 +223,7 @@ namespace BmsParser
                 model.Mode == Mode.Beat7K || model.Mode == Mode.Beat14K ? beat7ChannelAssign : beat5ChannelAssign;
             foreach (var line in channelLines)
             {
-                ChartDecoder.TryParseInt36(line, 4, out var channel);
+                Utility.TryParseInt36(line[4..6], out var channel);
                 var key = 0;
                 var q = Enum.GetValues(typeof(Channel)).Cast<Channel>()
                     .Where(nc => (int)nc <= channel && channel < (int)nc + 9);
@@ -433,9 +433,9 @@ namespace BmsParser
             var findex = line.IndexOf(":") + 1;
             var lindex = line.Length;
             var split = (lindex - findex) / 2;
-            for (var i = 0; i < split; i++)
+            foreach (var data in line[(line.IndexOf(":") + 1)..].Select((l, i) => (l,i)).GroupBy(x => x.i / 2).Select(g => new string(g.Select(x => x.l).ToArray())))
             {
-                if (!ChartDecoder.TryParseInt36(line, findex + i * 2, out var result))
+                if (!Utility.TryParseInt36(data, out var result))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{model.Title}:チャンネル定義中の不正な値:{line}"));
                     yield return 0;
@@ -448,11 +448,12 @@ namespace BmsParser
         private void processData(string line, Action<double, int> processser)
         {
             var findex = line.IndexOf(":") + 1;
+            var datas = line[(line.IndexOf(":") + 1)..].Select((l, i) => (l, i)).GroupBy(x => x.i / 2).Select(g => new string(g.Select(x => x.l).ToArray()));
             var lindex = line.Length;
             var split = (lindex - findex) / 2;
-            for (var i = 0; i < split; i++)
+            foreach (var (data, i) in datas.Select((da, idx) => (da, idx)))
             {
-                if (!ChartDecoder.TryParseInt36(line, findex + i * 2, out var result))
+                if (!Utility.TryParseInt36(data, out var result))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{model.Title}:チャンネル定義中の不正な値:{line}"));
                     continue;

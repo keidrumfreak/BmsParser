@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -99,9 +100,14 @@ namespace BmsParser
 
         public IEnumerable<int> AllTimes => TimeLines.Select(t => t.Time).ToArray();
 
-        public long LastNoteMilliTime => TimeLines
-            .Where(tl => Enumerable.Range(0, Mode.Key)
-                .Any(lane => tl.ExistNote(lane))).Max(t => t.TimeMilliSeccond);
+        public long LastNoteMilliTime
+        {
+            get
+            {
+                var tl = TimeLines.Where(tl => Enumerable.Range(0, Mode.Key).Any(lane => tl.ExistNote(lane)));
+                return tl.Any() ? tl.Max(t => t.TimeMilliSeccond) : 0;
+            }
+        }
 
         public int LastTime => (int)LastNoteMilliTime;
 
@@ -132,12 +138,12 @@ namespace BmsParser
         /// <summary>
         /// WAV定義のIDとファイル名のマップ
         /// </summary>
-        public Dictionary<int,string> WavList { get; set; } = new();
+        public ConcurrentDictionary<int,string> WavList { get; set; } = new();
 
         /// <summary>
         /// BGA定義のIDとファイル名のマップ
         /// </summary>
-        public Dictionary<int,string> BgaList { get; set; } = new();
+        public ConcurrentDictionary<int,string> BgaList { get; set; } = new();
 
         public ChartInformation ChartInformation { get; set; }
 

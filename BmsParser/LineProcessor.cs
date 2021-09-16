@@ -110,7 +110,7 @@ namespace BmsParser
 
             public void Process(string top, string line, BmsModel model, List<DecodeLog> logs, LineProcessor processor)
             {
-                if (top.Length != Name.Length + 2 || line.Length < Name.Length + 4 || !ChartDecoder.TryParseInt36(top[^2..], 0, out var seq))
+                if (top.Length != Name.Length + 2 || line.Length < Name.Length + 4 || !Utility.TryParseInt36(top[^2..], out var seq))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{Name}xxは不十分な定義です : {line}"));
                     return;
