@@ -184,6 +184,18 @@ namespace BmsParser
 
         public Dictionary<string, string> Values { get; } = new();
 
+        public static BmsModel Decode(string path, string[] lines)
+        {
+            if (path.EndsWith("bmson"))
+            {
+                throw new NotSupportedException();
+            }
+            else
+            {
+                return new BmsDecoder().Decode(path, lines);
+            }
+        }
+
         public string ToChartString()
         {
             var sb = new StringBuilder();

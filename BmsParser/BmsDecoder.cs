@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace BmsParser
 {
-    public class BmsDecoder : ChartDecoder
+    class BmsDecoder : ChartDecoder
     {
         public BmsDecoder(LNType lnType = LNType.LongNote)
         {

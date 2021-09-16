@@ -21,10 +21,7 @@ namespace BmsParser
 
         Channel[] noteChannels = { Channel.P1KeyBase, Channel.P2KeyBase, Channel.P1InvisibleKeyBase, Channel.P2InvisibleKeyBase, Channel.P1LongKeyBase, Channel.P2LongKeyBase, Channel.P1MineKeyBase, Channel.P2MineKeyBase };
 
-        public Section(BmsModel model, Section prev, LineProcessor processor, int bar,
-            //IEnumerable<string> lines, Dictionary<int, double> bpmTable,
-            //Dictionary<int, double> stopTable, Dictionary<int, double> scrollTable,
-            List<DecodeLog> logs)
+        public Section(BmsModel model, Section prev, LineProcessor processor, int bar, List<DecodeLog> logs)
         {
             this.model = model;
             this.logs = logs;
@@ -447,10 +444,8 @@ namespace BmsParser
 
         private void processData(string line, Action<double, int> processser)
         {
-            var findex = line.IndexOf(":") + 1;
             var datas = line[(line.IndexOf(":") + 1)..].Select((l, i) => (l, i)).GroupBy(x => x.i / 2).Select(g => new string(g.Select(x => x.l).ToArray()));
-            var lindex = line.Length;
-            var split = (lindex - findex) / 2;
+            var split = datas.Count();
             foreach (var (data, i) in datas.Select((da, idx) => (da, idx)))
             {
                 if (!Utility.TryParseInt36(data, out var result))
