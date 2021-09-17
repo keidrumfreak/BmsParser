@@ -18,12 +18,12 @@ namespace BmsParser
 
     public record TimeLineCache(double Time, TimeLine TimeLine);
 
-    public record Layer(Event Event, Sequece[][] Sequence)
+    public record Layer(Event Event, Sequence[][] Sequence)
     {
         public static readonly Layer[] Empty = Array.Empty<Layer>();
     }
 
-    public record Sequece(long Time, int ID = int.MinValue)
+    public record Sequence(long Time, int ID = int.MinValue)
     {
         public static readonly int End = int.MinValue;
 

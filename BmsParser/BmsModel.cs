@@ -42,7 +42,7 @@ namespace BmsParser
         /// <summary>
         /// サブタイトル名
         /// </summary>
-        public string SubTitle { get; set; } = string.Empty;
+        public string Subtitle { get; set; } = string.Empty;
 
         /// <summary>
         /// ジャンル名
@@ -116,7 +116,7 @@ namespace BmsParser
         /// </summary>
         public Difficulty Difficulty { get; set; }
 
-        public string FullTitle => string.IsNullOrEmpty(SubTitle) ? Title : $"{Title} {SubTitle}";
+        public string FullTitle => string.IsNullOrEmpty(Subtitle) ? Title : $"{Title} {Subtitle}";
 
         public string FullArtist => string.IsNullOrEmpty(SubArtist) ? Artist : $"{Artist} {SubArtist}";
 
@@ -138,12 +138,12 @@ namespace BmsParser
         /// <summary>
         /// WAV定義のIDとファイル名のマップ
         /// </summary>
-        public ConcurrentDictionary<int,string> WavList { get; set; } = new();
+        public string[] WavList { get; set; } = new string[36 * 36 + 1];
 
         /// <summary>
         /// BGA定義のIDとファイル名のマップ
         /// </summary>
-        public ConcurrentDictionary<int,string> BgaList { get; set; } = new();
+        public string[] BgaList { get; set; } = new string[36 * 36 + 1];
 
         public ChartInformation ChartInformation { get; set; }
 
@@ -184,15 +184,15 @@ namespace BmsParser
 
         public Dictionary<string, string> Values { get; } = new();
 
-        public static BmsModel Decode(string path, string[] lines)
+        public static BmsModel Decode(string path, string input)
         {
             if (path.EndsWith("bmson"))
             {
-                throw new NotSupportedException();
+                return new BmsonDecoder().Decode(path, input);
             }
             else
             {
-                return new BmsDecoder().Decode(path, lines);
+                return new BmsDecoder().Decode(path, input);
             }
         }
 

@@ -14,7 +14,7 @@ namespace BmsParser
             new CommandWord("#PLAYER", ValueType.Number, nameof(BmsModel.Player)),
             new CommandWord("#GENRE", ValueType.Text, nameof(BmsModel.Genre)),
             new CommandWord("#TITLE", ValueType.Text, nameof(BmsModel.Title)),
-            new CommandWord("#SUBTITLE", ValueType.Text, nameof(BmsModel.SubTitle)),
+            new CommandWord("#SUBTITLE", ValueType.Text, nameof(BmsModel.Subtitle)),
             new CommandWord("#ARTIST", ValueType.Text, nameof(BmsModel.Artist)),
             new CommandWord("#SUBARTIST", ValueType.Text, nameof(BmsModel.SubArtist)),
             new CommandWord("#PLAYLEVEL", ValueType.Text, nameof(BmsModel.PlayLevel)),
@@ -148,7 +148,7 @@ namespace BmsParser
                             "#WAV" => model.WavList,
                             _ => throw new NotSupportedException()
                         };
-                        textTable.Put(seq, arg.Replace('\\', '/'));
+                        textTable[seq] = arg.Replace('\\', '/');
                         return;
                 }
             }

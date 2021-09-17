@@ -17,24 +17,25 @@ namespace BmsParser
 
         new public BmsModel Decode(string path)
         {
-            var model = decode(path, path.EndsWith(".pms"), null, File.ReadAllLines(path, Encoding.GetEncoding("shift-jis")));
+            var model = decode(path, path.EndsWith(".pms"), null, File.ReadAllText(path, Encoding.GetEncoding("shift-jis")));
             return model;
         }
 
-        public BmsModel Decode(string path, string[] lines)
+        public BmsModel Decode(string path, string input)
         {
-            var model = decode(path, path.EndsWith(".pms"), null, lines);
+            var model = decode(path, path.EndsWith(".pms"), null, input);
             return model;
         }
 
         public override BmsModel Decode(ChartInformation info)
         {
             LNType = info.LNType;
-            return decode(info.Path, info.Path.EndsWith(".pms"), info.SelectedRandoms, File.ReadAllLines(info.Path, Encoding.GetEncoding("shift-jis")));
+            return decode(info.Path, info.Path.EndsWith(".pms"), info.SelectedRandoms, File.ReadAllText(info.Path, Encoding.GetEncoding("shift-jis")));
         }
 
-        private BmsModel decode(string path, bool isPms, int[] selectedRandom, string[] fileLines)
+        private BmsModel decode(string path, bool isPms, int[] selectedRandom, string input)
         {
+            var fileLines = input.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
             logs.Clear();
             var time = DateTime.Now;
             var model = new BmsModel();
@@ -183,8 +184,9 @@ namespace BmsParser
                 logs.Add(new DecodeLog(State.Warning, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
             }
 
-            model.MD5 = getMd5Hash(path);
-            model.Sha256 = getSha256Hash(path);
+            var bytearr = Encoding.GetEncoding("shift-jis").GetBytes(input);
+            model.MD5 = getMd5Hash(bytearr);
+            model.Sha256 = getSha256Hash(bytearr);
 
             if (selectedRandom == null)
             {
@@ -196,24 +198,18 @@ namespace BmsParser
             return model;
         }
 
-        private string getMd5Hash(string path)
+        private string getMd5Hash(byte[] input)
         {
-            using (var file = File.OpenRead(path))
-            {
-                var md5 = MD5.Create();
-                var arr = md5.ComputeHash(file);
-                return BitConverter.ToString(arr).ToLower().Replace("-", "");
-            }
+            var md5 = MD5.Create();
+            var arr = md5.ComputeHash(input);
+            return BitConverter.ToString(arr).ToLower().Replace("-", "");
         }
 
-        private string getSha256Hash(string path)
+        private string getSha256Hash(byte[] input)
         {
-            using (var file = File.OpenRead(path))
-            {
-                var sha256 = SHA256.Create();
-                var arr = sha256.ComputeHash(file);
-                return BitConverter.ToString(arr).ToLower().Replace("-", "");
-            }
+            var sha256 = SHA256.Create();
+            var arr = sha256.ComputeHash(input);
+            return BitConverter.ToString(arr).ToLower().Replace("-", "");
         }
     }
 }

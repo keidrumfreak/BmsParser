@@ -18,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="_Everyday evermore [PIANO].bmson">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="_ld2013_a.bms">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

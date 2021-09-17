@@ -88,7 +88,7 @@ namespace BmsParser.Tests
         [DataTestMethod]
         [DataRow("#GENRE TEST", "TEST", nameof(BmsModel.Genre))]
         [DataRow("#TITLE TEST", "TEST", nameof(BmsModel.Title))]
-        [DataRow("#SUBTITLE TEST", "TEST", nameof(BmsModel.SubTitle))]
+        [DataRow("#SUBTITLE TEST", "TEST", nameof(BmsModel.Subtitle))]
         [DataRow("#ARTIST TEST", "TEST", nameof(BmsModel.Artist))]
         [DataRow("#SUBARTIST TEST", "TEST", nameof(BmsModel.SubArtist))]
         public void LoadText(string line, string value, string propertyName)

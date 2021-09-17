@@ -148,28 +148,28 @@ namespace BmsParser
         int[] beat7ChannelAssign = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
         int[] popnChannelAssign = { 0, 1, 2, 3, 4, -1, -1, -1, -1, -1, 5, 6, 7, 8, -1, -1, -1, -1 };
 
-        public void MakeTimeLine(IDictionary<int, string> wavMap, IDictionary<int, string> bgaMap, SortedDictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
+        public void MakeTimeLine(string[] wavMap, string[] bgaMap, SortedDictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
         {
             var baseTL = getTimeLine(sectionNum, tlCache);
             baseTL.IsSectionLine = true;
 
             if (poor.Length > 0)
             {
-                var poors = new Sequece[poor.Length + 1];
+                var poors = new Sequence[poor.Length + 1];
                 var poorTime = 500;
                 for (var i = 0; i < poor.Length; i++)
                 {
-                    if (bgaMap.ContainsKey(poor[i]))
+                    if (!string.IsNullOrEmpty(bgaMap[poor[i]]))
                     {
-                        poors[i] = new Sequece(i * poorTime / poor.Length, poor[i]);
+                        poors[i] = new Sequence(i * poorTime / poor.Length, poor[i]);
                     }
                     else
                     {
-                        poors[i] = new Sequece(i * poorTime / poor.Length, -1);
+                        poors[i] = new Sequence(i * poorTime / poor.Length, -1);
                     }
                 }
-                poors[poors.Length - 1] = new Sequece(poorTime);
-                baseTL.EventLayer = new[] { new Layer(new Event(EventType.Miss, 1), new Sequece[][] { poors }) };
+                poors[poors.Length - 1] = new Sequence(poorTime);
+                baseTL.EventLayer = new[] { new Layer(new Event(EventType.Miss, 1), new Sequence[][] { poors }) };
             }
 
             var hasStop = stop.Keys.Any();
@@ -388,7 +388,7 @@ namespace BmsParser
                             }
                             if (!inSideLN)
                             {
-                                tl.SetNote(key, new MineNote(wavMap.ContainsKey(0) ? 0 : -2, data));
+                                tl.SetNote(key, new MineNote(string.IsNullOrEmpty(wavMap[0]) ? -2 : 0, data));
                             }
                             else
                             {
