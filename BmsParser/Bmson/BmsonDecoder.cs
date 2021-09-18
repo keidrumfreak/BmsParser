@@ -13,7 +13,7 @@ namespace BmsParser
     {
         new public BmsModel Decode(string path)
         {
-            return Decode(path, File.ReadAllText(path, Encoding.GetEncoding("shift-jis")));
+            return Decode(path, File.ReadAllText(path));
         }
 
         public override BmsModel Decode(ChartInformation info)
@@ -27,7 +27,7 @@ namespace BmsParser
             var bmson = JsonSerializer.Deserialize<Bmson>(input);
             var model = new BmsModel();
             var sha256 = SHA256.Create();
-            var arr = sha256.ComputeHash(Encoding.GetEncoding("shift-jis").GetBytes(input));
+            var arr = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
             model.Sha256 = BitConverter.ToString(arr).ToLower().Replace("-", "");
             model.Title = bmson.Info.Title;
             model.Subtitle = (bmson.Info.Subtitle != null ? bmson.Info.Subtitle : "")
