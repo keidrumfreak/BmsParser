@@ -125,6 +125,9 @@ namespace BmsParser
 
             Task.WaitAll(tasks.ToArray());
 
+            if (!processor.BarTable.Any())
+                return null;
+
             var prev = default(Section);
             var sections = new List<Section>();
             for (var i = 0; i <= processor.BarTable.Keys.Max(); i++)
