@@ -13,7 +13,7 @@ namespace BmsParser
     {
         new public BmsModel Decode(string path)
         {
-            return Decode(path, File.ReadAllText(path));
+            return Decode(path, File.ReadAllBytes(path));
         }
 
         public override BmsModel Decode(ChartInformation info)
@@ -22,12 +22,16 @@ namespace BmsParser
             return Decode(info.Path);
         }
 
-        public BmsModel Decode(string path, string input)
+        public BmsModel Decode(string path, byte[] bin)
         {
+            string input;
+            using (var mem = new MemoryStream(bin))
+            using (var reader = new StreamReader(mem))
+                input = new StreamReader(new MemoryStream(bin)).ReadToEnd();
             var bmson = JsonSerializer.Deserialize<Bmson>(input);
             var model = new BmsModel();
             var sha256 = SHA256.Create();
-            var arr = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+            var arr = sha256.ComputeHash(bin);
             model.Sha256 = BitConverter.ToString(arr).ToLower().Replace("-", "");
             model.Title = bmson.Info.Title;
             model.Subtitle = (bmson.Info.Subtitle != null ? bmson.Info.Subtitle : "")

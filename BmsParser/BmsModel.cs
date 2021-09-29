@@ -196,15 +196,15 @@ namespace BmsParser
             }
         }
 
-        public static BmsModel Decode(string path, string input)
+        public static BmsModel Decode(string path, byte[] bin)
         {
             if (path.EndsWith("bmson"))
             {
-                return new BmsonDecoder().Decode(path, input);
+                return new BmsonDecoder().Decode(path, bin);
             }
             else
             {
-                return new BmsDecoder().Decode(path, input);
+                return new BmsDecoder().Decode(path, bin);
             }
         }
 

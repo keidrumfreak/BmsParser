@@ -17,24 +17,28 @@ namespace BmsParser
 
         new public BmsModel Decode(string path)
         {
-            var model = decode(path, path.EndsWith(".pms"), null, File.ReadAllText(path, Encoding.GetEncoding("shift-jis")));
+            var model = decode(path, path.EndsWith(".pms"), null, File.ReadAllBytes(path));
             return model;
         }
 
-        public BmsModel Decode(string path, string input)
+        public BmsModel Decode(string path, byte[] bin)
         {
-            var model = decode(path, path.EndsWith(".pms"), null, input);
+            var model = decode(path, path.EndsWith(".pms"), null, bin);
             return model;
         }
 
         public override BmsModel Decode(ChartInformation info)
         {
             LNType = info.LNType;
-            return decode(info.Path, info.Path.EndsWith(".pms"), info.SelectedRandoms, File.ReadAllText(info.Path, Encoding.GetEncoding("shift-jis")));
+            return decode(info.Path, info.Path.EndsWith(".pms"), info.SelectedRandoms, File.ReadAllBytes(info.Path));
         }
 
-        private BmsModel decode(string path, bool isPms, int[] selectedRandom, string input)
+        private BmsModel decode(string path, bool isPms, int[] selectedRandom, byte[] bin)
         {
+            string input;
+            using (var mem = new MemoryStream(bin))
+            using (var reader = new StreamReader(mem))
+                input = new StreamReader(new MemoryStream(bin), Encoding.GetEncoding("shift-jis"), true).ReadToEnd();
             var fileLines = input.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
             logs.Clear();
             var time = DateTime.Now;
@@ -187,9 +191,8 @@ namespace BmsParser
                 logs.Add(new DecodeLog(State.Warning, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
             }
 
-            var bytearr = Encoding.GetEncoding("shift-jis").GetBytes(input);
-            model.MD5 = getMd5Hash(bytearr);
-            model.Sha256 = getSha256Hash(bytearr);
+            model.MD5 = getMd5Hash(bin);
+            model.Sha256 = getSha256Hash(bin);
 
             if (selectedRandom == null)
             {
