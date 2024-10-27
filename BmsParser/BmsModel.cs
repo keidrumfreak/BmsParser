@@ -109,7 +109,7 @@ namespace BmsParser
             }
         }
 
-        public int LastTime => (int)LastNoteMilliTime;
+        public long LastTime => LastNoteMilliTime;
 
         /// <summary>
         /// 表記ランク
