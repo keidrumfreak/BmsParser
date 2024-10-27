@@ -33,5 +33,17 @@ namespace BmsParser.Tests
             Assert.AreEqual(1500, model.GetTotalNotes());
             Assert.AreEqual(156846, model.LastTime);
         }
+
+        [TestMethod]
+        public void Decord2()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var decorder = new BmsDecoder();
+            var model = decorder.Decode("_DPAG.bms");
+            Assert.AreEqual("4d8a0ebdafd666c3791c8dce3d56311c8c2edc718c714f88073e23356153f254", model.Sha256);
+            Assert.AreEqual("66739cb4d49693b07fa33ed2265f1f6f", model.MD5);
+            Assert.AreEqual(1626945073, model.GetTotalNotes());
+            Assert.AreEqual(113072, model.LastTime);
+        }
     }
 }
