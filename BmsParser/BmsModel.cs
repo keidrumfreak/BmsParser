@@ -2,272 +2,676 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using BmsParser;
 
 namespace BmsParser
 {
-    public enum LNType
-    {
-        LongNote = 0,
-        ChargeNote = 1,
-        HellChargeNote = 2
-    }
-
-    public enum Difficulty
-    {
-        Beginner = 0,
-        Normal = 1,
-        Hyper = 2,
-        Another = 3,
-        Insane = 4
-    }
-
-    public enum JudgeRankType { BmsRank, BmsDefEXRank, BmsonJudgeRank }
-
-    public enum TotalType { Bms, Bmson }
-
     public class BmsModel
     {
-        /// <summary>
-        /// プレイヤー数
-        /// </summary>
-        public int Player { get; set; }
+        /**
+ * プレイヤー数
+ */
+        private int player;
+        /**
+         * 使用するキー数
+         */
+        private Mode mode;
+        /**
+         * タイトル名
+         */
+        private String title = "";
+        /**
+         * サブタイトル名
+         */
+        private String subTitle = "";
+        /**
+         * ジャンル名
+         */
+        private String genre = "";
+        /**
+         * アーティスト
+         */
+        private String artist = "";
+        /**
+         * サブアーティスト
+         */
+        private String subartist = "";
 
-        /// <summary>
-        /// タイトル名
-        /// </summary>
-        public string Title { get; set; } = string.Empty;
+        /**
+         * バナー
+         */
+        private String banner = "";
+        /**
+         * ステージ画像
+         */
+        private String stagefile = "";
+        private String backbmp = "";
+        private String preview = "";
+        /**
+         * 標準BPM
+         */
+        private double bpm;
+        /**
+         * 表記レベル
+         */
+        private String playlevel = "";
+        /**
+         * 表記ランク(0:beginner, 1:normal, 2:hyper, 3:another, 4:insane)
+         */
+        private int difficulty = 0;
+        /**
+         * 判定ランク
+         */
+        private int judgerank = 2;
+        /**
+         * 判定ランクのタイプ
+         */
+        private JudgeRankType judgerankType = JudgeRankType.BMS_RANK;
+        /**
+         * TOTAL値
+         */
+        private double total = 100;
+        /**
+         * TOTALのタイプ
+         */
+        private TotalType totalType = TotalType.BMSON;
+        /**
+         * 標準ボリューム
+         */
+        private int volwav;
+        /**
+         * MD5値
+         */
+        private String md5 = "";
+        /**
+         * SHA256値
+         */
+        private String sha256 = "";
+        /**
+         * WAV定義のIDとファイル名のマップ
+         */
+        private String[] wavmap = new String[0];
+        /**
+         * BGA定義のIDとファイル名のマップ
+         */
+        private String[] bgamap = new String[0];
+        /**
+         * 進数指定
+         */
+        private int @base = 36;
 
-        /// <summary>
-        /// サブタイトル名
-        /// </summary>
-        public string Subtitle { get; set; } = string.Empty;
+        private int lnmode = LongNote.TYPE_UNDEFINED;
 
-        /// <summary>
-        /// ジャンル名
-        /// </summary>
-        public string Genre { get; set; } = string.Empty;
+        private int lnobj = -1;
 
-        /// <summary>
-        /// アーティスト
-        /// </summary>
-        public string Artist { get; set; } = string.Empty;
+        public static readonly int LNTYPE_LONGNOTE = 0;
+        public static readonly int LNTYPE_CHARGENOTE = 1;
+        public static readonly int LNTYPE_HELLCHARGENOTE = 2;
 
-        /// <summary>
-        /// サブアーティスト
-        /// </summary>
-        public string SubArtist { get; set; } = string.Empty;
+        /**
+         * 時間とTimeLineのマッピング
+         */
+        private TimeLine[] timelines = new TimeLine[0];
 
-        /// <summary>
-        /// バナー
-        /// </summary>
-        public string Banner { get; set; } = string.Empty;
+        private ChartInformation info;
 
-        /// <summary>
-        /// 標準BPM
-        /// </summary>
-        public double Bpm { get; set; }
+        private Dictionary<String, String> values = new();
 
-        /// <summary>
-        /// 表記レベル
-        /// </summary>
-        public string PlayLevel { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 判定ランク
-        /// </summary>
-        public int JudgeRank { get; set; } = 2;
-
-        /// <summary>
-        /// TOTAL値
-        /// </summary>
-        public double Total { get; set; } = 100;
-
-        /// <summary>
-        /// 標準ボリューム
-        /// </summary>
-        public int VolWav { get; set; }
-
-        public double MinBpm => new[] { Bpm }.Concat(TimeLines.Select(t => t.Bpm)).Min();
-
-        public double MaxBpm => new[] { Bpm }.Concat(TimeLines.Select(t => t.Bpm)).Max();
-
-        /// <summary>
-        /// 時間とTimeLineのマッピング
-        /// </summary>
-        public TimeLine[] TimeLines { get; set; } = Array.Empty<TimeLine>();
-
-        public IEnumerable<int> AllTimes => TimeLines.Select(t => t.Time).ToArray();
-
-        public long LastNoteMilliTime
+        public BmsModel()
         {
-            get
+        }
+
+        public int getPlayer()
+        {
+            return player;
+        }
+
+        public void setPlayer(int player)
+        {
+            this.player = player;
+        }
+
+        public String getTitle()
+        {
+            return title;
+        }
+
+        public void setTitle(String title)
+        {
+            if (title == null)
             {
-                var tl = TimeLines.Where(tl => Enumerable.Range(0, Mode.Key).Any(lane => tl.ExistNote(lane)));
-                return tl.Any() ? tl.Max(t => t.TimeMilliSeccond) : 0;
+                this.title = "";
+                return;
+            }
+            this.title = title;
+        }
+
+        public String getSubTitle()
+        {
+            return subTitle;
+        }
+
+        public void setSubTitle(String subTitle)
+        {
+            if (subTitle == null)
+            {
+                this.subTitle = "";
+                return;
+            }
+            this.subTitle = subTitle;
+        }
+
+        public String getGenre()
+        {
+            return genre;
+        }
+
+        public void setGenre(String genre)
+        {
+            if (genre == null)
+            {
+                this.genre = "";
+                return;
+            }
+            this.genre = genre;
+        }
+
+        public String getArtist()
+        {
+            return artist;
+        }
+
+        public void setArtist(String artist)
+        {
+            if (artist == null)
+            {
+                this.artist = "";
+                return;
+            }
+            this.artist = artist;
+        }
+
+        public String getSubArtist()
+        {
+            return subartist;
+        }
+
+        public void setSubArtist(String artist)
+        {
+            if (artist == null)
+            {
+                this.subartist = "";
+                return;
+            }
+            this.subartist = artist;
+        }
+
+        public void setBanner(String banner)
+        {
+            if (banner == null)
+            {
+                this.banner = "";
+                return;
+            }
+            this.banner = banner;
+        }
+
+        public String getBanner()
+        {
+            return banner;
+        }
+
+        public double getBpm()
+        {
+            return bpm;
+        }
+
+        public void setBpm(double bpm)
+        {
+            ;
+            this.bpm = bpm;
+        }
+
+        public String getPlaylevel()
+        {
+            return playlevel;
+        }
+
+        public void setPlaylevel(String playlevel)
+        {
+            this.playlevel = playlevel;
+        }
+
+        public int getJudgerank()
+        {
+            return judgerank;
+        }
+
+        public void setJudgerank(int judgerank)
+        {
+            this.judgerank = judgerank;
+        }
+
+        public double getTotal()
+        {
+            return total;
+        }
+
+        public void setTotal(double total)
+        {
+            this.total = total;
+        }
+
+        public int getVolwav()
+        {
+            return volwav;
+        }
+
+        public void setVolwav(int volwav)
+        {
+            this.volwav = volwav;
+        }
+
+        public double getMinBPM()
+        {
+            double bpm = this.getBpm();
+            foreach (TimeLine time in timelines)
+            {
+                double d = time.getBPM();
+                bpm = (bpm <= d) ? bpm : d;
+            }
+            return bpm;
+        }
+
+        public double getMaxBPM()
+        {
+            double bpm = this.getBpm();
+            foreach (TimeLine time in timelines)
+            {
+                double d = time.getBPM();
+                bpm = (bpm >= d) ? bpm : d;
+            }
+            return bpm;
+        }
+
+        public void setAllTimeLine(TimeLine[] timelines)
+        {
+            this.timelines = timelines;
+        }
+
+        public TimeLine[] getAllTimeLines()
+        {
+            return timelines;
+        }
+
+        public long[] getAllTimes()
+        {
+            TimeLine[] times = getAllTimeLines();
+            long[] result = new long[times.Length];
+            for (int i = 0; i < times.Length; i++)
+            {
+                result[i] = times[i].getTime();
+            }
+            return result;
+        }
+
+        public int LastTime => getLastTime();
+
+        public int getLastTime()
+        {
+            return (int)getLastMilliTime();
+        }
+
+        public long getLastMilliTime()
+        {
+            int keys = mode.key;
+            for (int i = timelines.Length - 1; i >= 0; i--)
+            {
+                TimeLine tl = timelines[i];
+                for (int lane = 0; lane < keys; lane++)
+                {
+                    if (tl.existNote(lane) || tl.getHiddenNote(lane) != null
+                            || tl.getBackGroundNotes().Length > 0 || tl.getBGA() != -1
+                            || tl.getLayer() != -1)
+                    {
+                        return tl.getMilliTime();
+                    }
+                }
+            }
+            return 0;
+        }
+
+        public int getLastNoteTime()
+        {
+            return (int)getLastNoteMilliTime();
+        }
+
+        public long getLastNoteMilliTime()
+        {
+            int keys = mode.key;
+            for (int i = timelines.Length - 1; i >= 0; i--)
+            {
+                TimeLine tl = timelines[i];
+                for (int lane = 0; lane < keys; lane++)
+                {
+                    if (tl.existNote(lane))
+                    {
+                        return tl.getMilliTime();
+                    }
+                }
+            }
+            return 0;
+        }
+
+        public int getDifficulty()
+        {
+            return difficulty;
+        }
+
+        public void setDifficulty(int difficulty)
+        {
+            this.difficulty = difficulty;
+        }
+
+        public int compareTo(BmsModel model)
+        {
+            return this.title.CompareTo(model.title);
+        }
+
+        public String getFullTitle()
+        {
+            return title + (subTitle != null && subTitle.Length > 0 ? " " + subTitle : "");
+        }
+
+        public String getFullArtist()
+        {
+            return artist + (subartist != null && subartist.Length > 0 ? " " + subartist : "");
+        }
+
+        public string MD5 => getMD5();
+
+        public void setMD5(String hash)
+        {
+            this.md5 = hash;
+        }
+
+        public String getMD5()
+        {
+            return md5;
+        }
+
+        public string Sha256 => getSHA256();
+
+        public String getSHA256()
+        {
+            return sha256;
+        }
+
+        public void setSHA256(String sha256)
+        {
+            this.sha256 = sha256;
+        }
+
+        public void setMode(Mode mode)
+        {
+            this.mode = mode;
+            foreach (TimeLine tl in timelines)
+            {
+                tl.setLaneCount(mode.key);
             }
         }
 
-        public int LastTime => (int)LastNoteMilliTime;
-
-        /// <summary>
-        /// 表記ランク
-        /// </summary>
-        public Difficulty Difficulty { get; set; }
-
-        public string FullTitle => string.IsNullOrEmpty(Subtitle) ? Title : $"{Title} {Subtitle}";
-
-        public string FullArtist => string.IsNullOrEmpty(SubArtist) ? Artist : $"{Artist} {SubArtist}";
-
-        /// <summary>
-        /// MD5値
-        /// </summary>
-        public string MD5 { get; set; }
-
-        /// <summary>
-        /// Sha256値
-        /// </summary>
-        public string Sha256 { get; set; }
-
-        /// <summary>
-        /// 使用するキー数
-        /// </summary>
-        public Mode Mode { get; set; }
-
-        /// <summary>
-        /// WAV定義のIDとファイル名のマップ
-        /// </summary>
-        public string[] WavList { get; set; } = new string[36 * 36 + 1];
-
-        /// <summary>
-        /// BGA定義のIDとファイル名のマップ
-        /// </summary>
-        public string[] BgaList { get; set; } = new string[36 * 36 + 1];
-
-        public ChartInformation ChartInformation { get; set; }
-
-        public int[] Random => ChartInformation?.SelectedRandoms;
-
-        public string Path => ChartInformation?.Path;
-
-        public LNType LNType => ChartInformation?.LNType ?? LNType.LongNote;
-
-        /// <summary>
-        /// ステージ画像
-        /// </summary>
-        public string StageFile { get; set; } = string.Empty;
-
-        public string BackBmp { get; set; } = string.Empty;
-
-        public bool ContainsUndefinedLongNote => TimeLines
-            .Any(t => Enumerable.Range(0, Mode.Key)
-                .Any(i => t.GetNote(i) != null && t.GetNote(i) is LongNote ln && ln.Type == LNMode.Undefined));
-
-        public bool ContainsLongNote => TimeLines
-            .Any(tl => Enumerable.Range(0, Mode.Key)
-                .Any(i => tl.GetNote(i) is LongNote));
-
-        public bool ContainsMineNote => TimeLines
-            .Any(tl => Enumerable.Range(0, Mode.Key)
-                .Any(i => tl.GetNote(i) is MineNote));
-
-        public string Preview { get; set; }
-
-        public LNMode LNMode { get; set; }
-
-        public JudgeRankType JudgeRankType { get; set; }
-
-        public TotalType TotalType { get; set; }
-
-        public int LNObj { get; set; } = -1;
-
-        public Dictionary<string, string> Values { get; } = new();
-
-        public static BmsModel Decode(string path)
+        public Mode getMode()
         {
-            if (path.EndsWith("bmson"))
-            {
-                return new BmsonDecoder().Decode(path);
-            }
-            else
-            {
-                return new BmsDecoder().Decode(path);
-            }
+            return mode;
         }
 
-        public static BmsModel Decode(string path, byte[] bin)
+        public String[] getWavList()
         {
-            if (path.EndsWith("bmson"))
-            {
-                return new BmsonDecoder().Decode(path, bin);
-            }
-            else
-            {
-                return new BmsDecoder().Decode(path, bin);
-            }
+            return wavmap;
         }
 
-        public string ToChartString()
+        public void setWavList(String[] wavmap)
         {
-            var sb = new StringBuilder();
-            sb.Append($"JUDGERANK:{JudgeRank}\n");
-            sb.Append($"TOTAL:{Total}\n");
-            if (LNMode != LNMode.Undefined)
-                sb.Append($"LNMODE:{LNMode}\n");
-            var nowBpm = -double.MinValue;
-            var tlsb = new StringBuilder();
-            foreach (var tl in TimeLines)
+            this.wavmap = wavmap;
+        }
+
+        public String[] getBgaList()
+        {
+            return bgamap;
+        }
+
+        public void setBgaList(String[] bgamap)
+        {
+            this.bgamap = bgamap;
+        }
+
+        public ChartInformation getChartInformation()
+        {
+            return info;
+        }
+
+        public void setChartInformation(ChartInformation info)
+        {
+            this.info = info;
+        }
+
+        public int[] getRandom()
+        {
+            return info != null ? info.selectedRandoms : null;
+        }
+
+        public String getPath()
+        {
+            return info != null && info.path != null ? info.path.ToString() : null;
+        }
+
+        public int getLntype()
+        {
+            return info != null ? info.lntype : LNTYPE_LONGNOTE;
+        }
+
+        public String getStagefile()
+        {
+            return stagefile;
+        }
+
+        public void setStagefile(String stagefile)
+        {
+            if (stagefile == null)
             {
-                tlsb.Clear();
-                tlsb.Append($"{tl.Time}:");
-                var write = false;
-                if (nowBpm != tl.Bpm)
+                this.stagefile = "";
+                return;
+            }
+            this.stagefile = stagefile;
+        }
+
+        public String getBackbmp()
+        {
+            return backbmp;
+        }
+
+        public void setBackbmp(String backbmp)
+        {
+            if (backbmp == null)
+            {
+                this.backbmp = "";
+                return;
+            }
+            this.backbmp = backbmp;
+        }
+
+        public int GetTotalNotes()
+        {
+            return BMSModelUtils.getTotalNotes(this);
+        }
+
+        public bool containsUndefinedLongNote()
+        {
+            int keys = mode.key;
+            foreach (TimeLine tl in timelines)
+            {
+                for (int i = 0; i < keys; i++)
                 {
-                    nowBpm = tl.Bpm;
-                    tlsb.Append($"B({nowBpm})");
+                    if (tl.getNote(i) != null && tl.getNote(i) is LongNote
+
+                        && ((LongNote)tl.getNote(i)).getType() == LongNote.TYPE_UNDEFINED)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public bool containsLongNote()
+        {
+            int keys = mode.key;
+            foreach (TimeLine tl in timelines)
+            {
+                for (int i = 0; i < keys; i++)
+                {
+                    if (tl.getNote(i) is LongNote)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public bool containsMineNote()
+        {
+            int keys = mode.key;
+            foreach (TimeLine tl in timelines)
+            {
+                for (int i = 0; i < keys; i++)
+                {
+                    if (tl.getNote(i) is MineNote)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public String getPreview()
+        {
+            return preview;
+        }
+
+        public void setPreview(String preview)
+        {
+            this.preview = preview;
+        }
+        public EventLane getEventLane()
+        {
+            return new EventLane(this);
+        }
+
+        public Lane[] getLanes()
+        {
+            Lane[] lanes = new Lane[mode.key];
+            for (int i = 0; i < lanes.Length; i++)
+            {
+                lanes[i] = new Lane(this, i);
+            }
+            return lanes;
+        }
+
+        public int getLnobj()
+        {
+            return lnobj;
+        }
+
+        public void setLnobj(int lnobj)
+        {
+            this.lnobj = lnobj;
+        }
+
+        public int getLnmode()
+        {
+            return lnmode;
+        }
+
+        public void setLnmode(int lnmode)
+        {
+            this.lnmode = lnmode;
+        }
+
+        public Dictionary<String, String> getValues()
+        {
+            return values;
+        }
+
+        public String toChartString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("JUDGERANK:" + judgerank + "\n");
+            sb.Append("TOTAL:" + total + "\n");
+            if (lnmode != 0)
+            {
+                sb.Append("LNMODE:" + lnmode + "\n");
+            }
+            double nowbpm = -Double.MinValue;
+            StringBuilder tlsb = new StringBuilder();
+            foreach (TimeLine tl in timelines)
+            {
+                tlsb.Length = 0;
+                tlsb.Append(tl.getTime() + ":");
+                bool write = false;
+                if (nowbpm != tl.getBPM())
+                {
+                    nowbpm = tl.getBPM();
+                    tlsb.Append("B(" + nowbpm + ")");
                     write = true;
                 }
-                if (tl.StopTime != 0)
+                if (tl.getStop() != 0)
                 {
-                    tlsb.Append($"S({tl.StopTime})");
+                    tlsb.Append("S(" + tl.getStop() + ")");
                     write = true;
                 }
-                if (tl.IsSectionLine)
+                if (tl.getSectionLine())
                 {
-                    tlsb.Append('L');
+                    tlsb.Append("L");
                     write = true;
                 }
-                tlsb.Append('[');
-                for (int lane = 0; lane < Mode.Key; lane++)
+
+                tlsb.Append("[");
+                for (int lane = 0; lane < mode.key; lane++)
                 {
-                    Note n = tl.GetNote(lane);
+                    Note n = tl.getNote(lane);
                     if (n is NormalNote)
                     {
-                        tlsb.Append('1');
+                        tlsb.Append("1");
                         write = true;
                     }
-                    else if (n is LongNote ln)
+                    else if (n is LongNote)
                     {
-                        if (!ln.IsEnd)
+                        LongNote ln = (LongNote)n;
+                        if (!ln.isEnd())
                         {
-                            var lnchars = new[] { 'l', 'L', 'C', 'H' };
-                            tlsb.Append(lnchars[(int)ln.Type] + ln.Duration);
+                            char[] lnchars = { 'l', 'L', 'C', 'H' };
+                            tlsb.Append(lnchars[ln.getType()] + ln.getMilliDuration());
                             write = true;
                         }
                     }
-                    else if (n is MineNote mine)
+                    else if (n is MineNote)
                     {
-                        tlsb.Append("m" + mine.Damage);
+                        tlsb.Append("m" + ((MineNote)n).getDamage());
                         write = true;
                     }
                     else
                     {
-                        tlsb.Append('0');
+                        tlsb.Append("0");
                     }
-                    if (lane < Mode.Key - 1)
+                    if (lane < mode.key - 1)
                     {
-                        tlsb.Append(',');
+                        tlsb.Append(",");
                     }
                 }
                 tlsb.Append("]\n");
@@ -280,55 +684,52 @@ namespace BmsParser
             return sb.ToString();
         }
 
-        public enum NoteType { All, Key, LongKey, Scratch, LongScratch, Mine }
-        public enum PlaySide { Both, P1, P2 }
-
-        public int GetTotalNotes(NoteType type = NoteType.All, int start = 0, int end = int.MaxValue, PlaySide side = PlaySide.Both)
+        public JudgeRankType getJudgerankType()
         {
-            if (Mode.Player == 1 && side == PlaySide.P2)
-                return 0;
-            var slane = new int[Mode.ScratchKey.Length / (side == PlaySide.Both ? 1 : Mode.Player)];
-            var sindex = 0;
-            for (var i = side == PlaySide.P2 ? slane.Length : 0; sindex < slane.Length; i++)
-            {
-                slane[sindex] = Mode.ScratchKey[i];
-                sindex++;
-            }
-            var nlane = new int[(Mode.Key - Mode.ScratchKey.Length) / (side == PlaySide.Both ? 1 : Mode.Player)];
-            var nindex = 0;
-            for (var i = 0; nindex < nlane.Length; i++)
-            {
-                if (!Mode.IsScratchKey(i))
-                {
-                    nlane[nindex] = i;
-                    nindex++;
-                }
-            }
+            return judgerankType;
+        }
 
-            return TimeLines.Where(tl => start <= tl.Time && tl.Time < end)
-                .Sum(tl => type switch
-                {
-                    NoteType.All => tl.GetTotalNotes(LNType),
-                    NoteType.Key => nlane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is NormalNote),
-                    NoteType.LongKey => nlane
-                        .Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is LongNote ln
-                            && (ln.Type == LNMode.LongNote
-                                || ln.Type == LNMode.ChargeNote
-                                || ln.Type == LNMode.HellChargeNote
-                                || ln.Type == LNMode.Undefined && LNType != LNType.LongNote
-                                || !ln.IsEnd)),
-                    NoteType.Scratch => slane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is NormalNote),
-                    NoteType.LongScratch => slane
-                        .Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is LongNote ln
-                            && (ln.Type == LNMode.LongNote
-                                || ln.Type == LNMode.ChargeNote
-                                || ln.Type == LNMode.HellChargeNote
-                                || ln.Type == LNMode.Undefined && LNType != LNType.LongNote
-                                || !ln.IsEnd)),
-                    NoteType.Mine => nlane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is MineNote)
-                        + slane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is MineNote),
-                    _ => 0
-                });
+        public void setJudgerankType(JudgeRankType judgerankType)
+        {
+            this.judgerankType = judgerankType;
+        }
+
+        public TotalType getTotalType()
+        {
+            return totalType;
+        }
+
+        public void setTotalType(TotalType totalType)
+        {
+            this.totalType = totalType;
+        }
+
+        public enum JudgeRankType
+        {
+            BMS_RANK, BMS_DEFEXRANK, BMSON_JUDGERANK
+        }
+
+        public enum TotalType
+        {
+            BMS, BMSON
+        }
+
+        public int getBase()
+        {
+            return @base;
+        }
+
+        public void setBase(int @base)
+        {
+            if (@base == 62)
+            {
+                this.@base = @base;
+            }
+            else
+            {
+                this.@base = 36;
+            }
+            return;
         }
     }
 }

@@ -10,14 +10,14 @@ namespace BmsParser
     {
         public NormalNote(int wav)
         {
-            Wav = wav;
+            this.setWav(wav);
         }
 
         public NormalNote(int wav, long start, long duration)
         {
-            Wav = wav;
-            StartTimeMicrosecond = start;
-            DurationMicrosecond = duration;
+            this.setWav(wav);
+            this.setMicroStarttime(start);
+            this.setMicroDuration(duration);
         }
     }
 }

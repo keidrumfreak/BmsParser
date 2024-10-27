@@ -6,27 +6,27 @@ using System.Threading.Tasks;
 
 namespace BmsParser
 {
-    public record ChartInformation(string Path, LNType LNType, int[] SelectedRandoms);
+    public record ChartInformation(string path, int lntype, int[] selectedRandoms);
 
-    public enum State { Info, Warning, Error }
+    //public enum State { Info, Warning, Error }
 
-    public record DecodeLog(State State, string Message);
+    //public record DecodeLog(State State, string Message);
 
-    public enum EventType { Always, Play, Miss }
+    //public enum EventType { Always, Play, Miss }
 
-    public record Event(EventType Type, int Interval);
+    //public record Event(EventType Type, int Interval);
 
-    public record TimeLineCache(double Time, TimeLine TimeLine);
+    //public record TimeLineCache(double Time, TimeLine TimeLine);
 
-    public record Layer(Event Event, Sequence[][] Sequence)
-    {
-        public static readonly Layer[] Empty = Array.Empty<Layer>();
-    }
+    //public record Layer(Event Event, Sequence[][] Sequence)
+    //{
+    //    public static readonly Layer[] Empty = Array.Empty<Layer>();
+    //}
 
-    public record Sequence(long Time, int ID = int.MinValue)
-    {
-        public static readonly int End = int.MinValue;
+    //public record Sequence(long Time, int ID = int.MinValue)
+    //{
+    //    public static readonly int End = int.MinValue;
 
-        public bool IsEnd => ID == End;
-    }
+    //    public bool IsEnd => ID == End;
+    //}
 }

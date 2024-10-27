@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BmsParser;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BmsParser
 {
@@ -11,189 +13,372 @@ namespace BmsParser
     /// </summary>
     public class TimeLine
     {
-        long timeMicrosecond;
-        /// <summary>
-        /// タイムラインの時間(us)
-        /// </summary>
-        public long TimeMicrosecond
+        /**
+         * タイムラインの時間(us)
+         */
+        private long time;
+        /**
+         * タイムラインの小節
+         */
+        private double section;
+        /**
+         * タイムライン上に配置されている演奏レーン分のノート。配置されていないレーンにはnullを入れる。
+         */
+        private Note[] notes;
+
+        /**
+         * タイムライン上に配置されている演奏レーン分の不可視ノート。配置されていないレーンにはnullを入れる。
+         */
+        private Note[] hiddennotes;
+        /**
+         * タイムライン上に配置されているBGMノート
+         */
+        private List<Note> bgnotes = Note.EMPTYARRAY;
+        /**
+         * 小節線の有無
+         */
+        private bool sectionLine = false;
+        /**
+         * タイムライン上からのBPM変化
+         */
+        private double bpm;
+        /**
+         * ストップ時間(us)
+         */
+        private long stop;
+        /**
+         * スクロールスピード
+         */
+        private double scroll = 1.0;
+
+        /**
+         * 表示するBGAのID
+         */
+        private int bga = -1;
+        /**
+         * 表示するレイヤーのID
+         */
+        private int layer = -1;
+        /**
+         * POORレイヤー
+         */
+        private Layer[] eventlayer = Layer.EMPTY;
+
+        public TimeLine(double section, long time, int notesize)
         {
-            get { return timeMicrosecond; }
-            set
+            this.section = section;
+            this.time = time;
+            notes = new Note[notesize];
+            hiddennotes = new Note[notesize];
+        }
+
+        public int getTime()
+        {
+            return (int)(time / 1000);
+        }
+
+        public long getMilliTime()
+        {
+            return time / 1000;
+        }
+
+        public long getMicroTime()
+        {
+            return time;
+        }
+
+        public void setMicroTime(long time)
+        {
+            this.time = time;
+            foreach (Note n in notes)
             {
-                timeMicrosecond = value;
-                foreach (var note in notes.Where(n => n != null))
+                if (n != null)
                 {
-                    note.TimeMicrosecond = value;
+                    n.setMicroTime(time);
                 }
-                foreach (var note in hiddenNotes.Where(n => n != null))
+            }
+            foreach (Note n in hiddennotes)
+            {
+                if (n != null)
                 {
-                    note.TimeMicrosecond = value;
+                    n.setMicroTime(time);
                 }
-                foreach (var note in bgnotes.Where(n => n != null))
-                {
-                    note.TimeMicrosecond = value;
-                }
+            }
+            foreach (Note n in bgnotes)
+            {
+                n.setMicroTime(time);
             }
         }
 
-        public long TimeMilliSeccond => TimeMicrosecond / 1000;
-
-        public int Time => (int)(TimeMicrosecond / 1000);
-
-        double section;
-        /// <summary>
-        /// タイムラインの小節
-        /// </summary>
-        public double Section
-        { 
-            get { return section; }
-            set
-            {
-                section = value;
-                foreach (var note in notes.Where(n => n != null))
-                {
-                    note.Section = value;
-                }
-                foreach (var note in hiddenNotes.Where(n => n != null))
-                {
-                    note.Section = value;
-                }
-                foreach (var note in bgnotes.Where(n => n != null))
-                {
-                    note.Section = value;
-                }
-            }
+        public int getLaneCount()
+        {
+            return notes.Length;
         }
 
-        public int StopTime => (int)(StopMicrosecond / 1000);
-
-        public long StopMilliSecond => StopMicrosecond / 1000;
-
-        /// <summary>
-        /// ストップ時間(us)
-        /// </summary>
-        public long StopMicrosecond { get; set; }
-
-        public int LaneCount
+        public void setLaneCount(int lanes)
         {
-            get { return notes.Length; }
-            set
+            if (notes.Length != lanes)
             {
-                if (notes.Length == value) return;
-                var newNotes = new Note[value];
-                var newHiddenNotes = new Note[value];
-                for (var i = 0; i < value; i++)
+                Note[] newnotes = new Note[lanes];
+                Note[] newhiddennotes = new Note[lanes];
+                for (int i = 0; i < lanes; i++)
                 {
                     if (i < notes.Length)
                     {
-                        newNotes[i] = notes[i];
-                        newHiddenNotes[i] = newHiddenNotes[i];
+                        newnotes[i] = notes[i];
+                        newhiddennotes[i] = hiddennotes[i];
                     }
                 }
-                notes = newNotes;
-                hiddenNotes = newHiddenNotes;
+                notes = newnotes;
+                hiddennotes = newhiddennotes;
             }
         }
 
-        /// <summary>
-        /// タイムライン上からのBPM変化
-        /// </summary>
-        public double Bpm { get; set; }
-
-        /// <summary>
-        /// 小節線の有無
-        /// </summary>
-        public bool IsSectionLine { get; set; } = false;
-
-        /// <summary>
-        /// 表示するBGAのID
-        /// </summary>
-        public int BgaID { get; set; } = -1;
-
-        /// <summary>
-        /// 表示するレイヤーのID
-        /// </summary>
-        public int LayerID { get; set; } = -1;
-
-        /// <summary>
-        /// POORレイヤー
-        /// </summary>
-        public Layer[] EventLayer { get; set; } = Layer.Empty;
-
-        /// <summary>
-        /// スクロール速度
-        /// </summary>
-        public double Scroll { get; set; } = 1.0;
-
-        private Note[] notes;
-
-        private Note[] hiddenNotes;
-
-        private List<Note> bgnotes = new();
-
-        public TimeLine(double section, long time, int noteSize)
+        /**
+         * タイムライン上の総ノート数を返す
+         * 
+         * @return
+         */
+        public int getTotalNotes()
         {
-            this.section = section;
-            timeMicrosecond = time;
-            notes = new Note[noteSize];
-            hiddenNotes = new Note[noteSize];
+            return getTotalNotes(BmsModel.LNTYPE_LONGNOTE);
         }
 
-        /// <summary>
-        /// タイムライン上の総ノート数を返す
-        /// </summary>
-        /// <param name="lnType"></param>
-        /// <returns></returns>
-        public int GetTotalNotes(LNType lnType = LNType.LongNote)
+        /**
+         * タイムライン上の総ノート数を返す
+         * 
+         * @return
+         */
+        public int getTotalNotes(int lntype)
         {
-            return notes.Count(n => n != null
-            && (n is LongNote ln
-            && (ln.Type == LNMode.ChargeNote || ln.Type == LNMode.HellChargeNote
-                || (ln.Type == LNMode.Undefined && lnType != LNType.LongNote)
-                || !ln.IsEnd)) || n is NormalNote);
+            int count = 0;
+            foreach (Note note in notes)
+            {
+                if (note != null)
+                {
+                    if (note is LongNote)
+                    {
+                        LongNote ln = (LongNote)note;
+                        if (ln.getType() == LongNote.TYPE_CHARGENOTE || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
+                                || (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != BmsModel.LNTYPE_LONGNOTE)
+                                || !ln.isEnd())
+                        {
+                            count++;
+                        }
+                    }
+                    else if (note is NormalNote)
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
         }
 
-        public bool ExistNote() => notes.Any(n => n != null);
+        public bool existNote()
+        {
+            foreach (Note n in notes)
+            {
+                if (n != null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
-        public bool ExistNote(int lane) => notes[lane] != null;
+        public bool existNote(int lane)
+        {
+            return notes[lane] != null;
+        }
 
-        public Note GetNote(int lane) => notes[lane];
+        public Note getNote(int lane)
+        {
+            return notes[lane];
+        }
 
-        public void SetNote(int lane, Note note)
+        public void setNote(int lane, Note note)
         {
             notes[lane] = note;
-            if (note == null) return;
-            note.Section = Section;
-            note.TimeMicrosecond = TimeMicrosecond;
+            if (note == null)
+            {
+                return;
+            }
+            note.setSection(section);
+            note.setMicroTime(time);
         }
 
-        public bool ExistHiddenNote() => hiddenNotes.Any(n => n != null);
-
-        public bool ExistHiddenNote(int lane) => hiddenNotes[lane] != null;
-
-        public Note GetHiddenNote(int lane) => hiddenNotes[lane];
-
-        public void SetHiddenNote(int lane, Note note)
+        public void setHiddenNote(int lane, Note note)
         {
-            hiddenNotes[lane] = note;
-            if (note == null) return;
-            note.Section = Section;
-            note.TimeMicrosecond = TimeMicrosecond;
+            hiddennotes[lane] = note;
+            if (note == null)
+            {
+                return;
+            }
+            note.setSection(section);
+            note.setMicroTime(time);
         }
 
-        public void AddBackGroundNote(Note note)
+        public bool existHiddenNote()
         {
-            if (note == null) return;
-            note.Section = Section;
-            note.TimeMicrosecond = TimeMicrosecond;
+            foreach (Note n in hiddennotes)
+            {
+                if (n != null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public Note getHiddenNote(int lane)
+        {
+            return hiddennotes[lane];
+        }
+
+        public void addBackGroundNote(Note note)
+        {
+            if (note == null)
+            {
+                return;
+            }
+            note.setSection(section);
+            note.setMicroTime(time);
             bgnotes.Add(note);
         }
 
-        public void RemoveBackGroundNote(Note note)
+        public void removeBackGroundNote(Note note)
         {
             bgnotes.Remove(note);
         }
 
-        public Note[] BackGroundNotes => bgnotes.ToArray();
+        public Note[] getBackGroundNotes()
+        {
+            return bgnotes.ToArray();
+        }
+
+        public void setBPM(double bpm)
+        {
+            this.bpm = bpm;
+        }
+
+        public double getBPM()
+        {
+            return bpm;
+        }
+
+        public void setSectionLine(bool section)
+        {
+            this.sectionLine = section;
+        }
+
+        public bool getSectionLine()
+        {
+            return sectionLine;
+        }
+
+        /**
+         * 表示するBGAのIDを取得する
+         * 
+         * @return BGAのID
+         */
+        public int getBGA()
+        {
+            return bga;
+        }
+
+        /**
+         * 表示するBGAのIDを設定する
+         * 
+         * @param bga
+         *            BGAのID
+         */
+        public void setBGA(int bga)
+        {
+            this.bga = bga;
+        }
+
+        /**
+         * 表示するレイヤーBGAのIDを取得する
+         * 
+         * @return レイヤーBGAのID
+         */
+        public int getLayer()
+        {
+            return layer;
+        }
+
+        public void setLayer(int layer)
+        {
+            this.layer = layer;
+        }
+
+        public Layer[] getEventlayer()
+        {
+            return eventlayer;
+        }
+
+        public void setEventlayer(Layer[] eventlayer)
+        {
+            this.eventlayer = eventlayer;
+        }
+
+        public double getSection()
+        {
+            return section;
+        }
+
+        public void setSection(double section)
+        {
+            foreach (Note n in notes)
+            {
+                if (n != null)
+                {
+                    n.setSection(section);
+                }
+            }
+            foreach (Note n in hiddennotes)
+            {
+                if (n != null)
+                {
+                    n.setSection(section);
+                }
+            }
+            foreach (Note n in bgnotes)
+            {
+                n.setSection(section);
+            }
+            this.section = section;
+        }
+
+        public int getStop()
+        {
+            return (int)(stop / 1000);
+        }
+
+        public long getMilliStop()
+        {
+            return stop / 1000;
+        }
+
+        public long getMicroStop()
+        {
+            return stop;
+        }
+
+        public void setStop(long stop)
+        {
+            this.stop = stop;
+        }
+
+        public double getScroll()
+        {
+            return scroll;
+        }
+
+        public void setScroll(double scroll)
+        {
+            this.scroll = scroll;
+        }
     }
 }

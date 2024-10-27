@@ -8,7 +8,7 @@ namespace BmsParser
 {
     static class Utility
     {
-        public static void Put<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue value)
+        public static void put<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue value)
         {
             lock (dic)
             {

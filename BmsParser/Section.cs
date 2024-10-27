@@ -1,483 +1,667 @@
 ﻿using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using BmsParser;
+using static BmsParser.DecodeLog.State;
+using static BmsParser.Layer;
+using static BmsParser.ChartDecoder;
 
 namespace BmsParser
 {
     class Section
     {
-        BmsModel model;
-        List<DecodeLog> logs;
-        List<string> channelLines = new();
-        double sectionNum;
-        double rate = 1.0;
-        int[] poor = Array.Empty<int>();
+        public const int ILLEGAL = -1;
+        public const int LANE_AUTOPLAY = 1;
+        public const int SECTION_RATE = 2;
+        public const int BPM_CHANGE = 3;
+        public const int BGA_PLAY = 4;
+        public const int POOR_PLAY = 6;
+        public const int LAYER_PLAY = 7;
+        public const int BPM_CHANGE_EXTEND = 8;
+        public const int STOP = 9;
 
-        SortedList<double, double> bpms = new();
-        SortedList<double, double> stop = new();
-        SortedList<double, double> scroll = new();
+        public const int P1_KEY_BASE = 1 * 36 + 1;
+        public const int P2_KEY_BASE = 2 * 36 + 1;
+        public const int P1_INVISIBLE_KEY_BASE = 3 * 36 + 1;
+        public const int P2_INVISIBLE_KEY_BASE = 4 * 36 + 1;
+        public const int P1_LONG_KEY_BASE = 5 * 36 + 1;
+        public const int P2_LONG_KEY_BASE = 6 * 36 + 1;
+        public const int P1_MINE_KEY_BASE = 13 * 36 + 1;
+        public const int P2_MINE_KEY_BASE = 14 * 36 + 1;
 
-        Channel[] noteChannels = { Channel.P1KeyBase, Channel.P2KeyBase, Channel.P1InvisibleKeyBase, Channel.P2InvisibleKeyBase, Channel.P1LongKeyBase, Channel.P2LongKeyBase, Channel.P1MineKeyBase, Channel.P2MineKeyBase };
+        public const int SCROLL = 1020;
 
-        public Section(BmsModel model, Section prev, LineProcessor processor, int bar, List<DecodeLog> logs)
+        public static readonly int[] NOTE_CHANNELS = {P1_KEY_BASE, P2_KEY_BASE ,P1_INVISIBLE_KEY_BASE, P2_INVISIBLE_KEY_BASE,
+            P1_LONG_KEY_BASE, P2_LONG_KEY_BASE, P1_MINE_KEY_BASE, P2_MINE_KEY_BASE};
+
+        /**
+         * 小節の拡大倍率
+         */
+        private double rate = 1.0;
+        /**
+         * POORアニメーション
+         */
+        private int[] poor = new int[0];
+
+        private BmsModel model;
+
+        private double sectionnum;
+
+        private List<DecodeLog> log;
+
+        private List<String> channellines;
+
+        public Section(BmsModel model, Section prev, List<String> lines, Dictionary<int, Double> bpmtable,
+                Dictionary<int, Double> stoptable, Dictionary<int, Double> scrolltable, List<DecodeLog> log)
         {
             this.model = model;
-            this.logs = logs;
+            this.log = log;
+            int @base = model.getBase();
 
-            sectionNum = prev == null ? 0 : (prev.sectionNum + prev.rate);
-
-            foreach (var line in processor.BarTable.TryGetValue(bar, out var lines) ? lines : new ())
+            channellines = new List<String>(lines.Count);
+            if (prev != null)
             {
-                if (!Utility.TryParseInt36(line[4..6], out var channel))
-                    channel = -1;
-
-                switch ((Channel)channel)
+                sectionnum = prev.sectionnum + prev.rate;
+            }
+            else
+            {
+                sectionnum = 0;
+            }
+            foreach (String line in lines)
+            {
+                int channel = ChartDecoder.parseInt36(line[4], line[5]);
+                switch (channel)
                 {
-                    case Channel.Illegal:
-                        logs.Add(new DecodeLog(State.Warning, $"チャンネル定義が無効です : {line}"));
+                    case ILLEGAL:
+                        log.Add(new DecodeLog(WARNING, "チャンネル定義が無効です : " + line));
                         break;
-                    case Channel.LaneAutoPlay:  // BGレーン
-                    case Channel.BgaPlay:       // BGAレーン
-                    case Channel.LayerPlay:     // レイヤー
-                        channelLines.Add(line);
+                    // BGレーン
+                    case LANE_AUTOPLAY:
+                    // BGAレーン
+                    case BGA_PLAY:
+                    // レイヤー
+                    case LAYER_PLAY:
+                        channellines.Add(line);
                         break;
-                    case Channel.SectionRate:   // 小節の拡大率
-                        if (!double.TryParse(line[(line.IndexOf(":") + 1)..], out rate))
-                            logs.Add(new DecodeLog(State.Warning, $"小節の拡大率が不正です : {line}"));
-                        break;
-                    case Channel.BpmChange:     // BPM変化
-                        processData(line, (pos, data) => { if (!bpms.ContainsKey(pos)) bpms.Add(pos, (double)(data / 36) * 16 + (data % 36)); });
-                        break;
-                    case Channel.PoorPlay:      // POORアニメーション
-                        poor = splitData(line).ToArray();
-                        // アニメーションが単一画像のみの定義の場合、0を除外する(ミスレイヤーチャンネルの定義が曖昧)
-                        var singleid = 0;
-                        foreach (var id in poor.Where(i => i != 0))
+                    // 小節の拡大率
+                    case SECTION_RATE:
+                        int colon_index = line.IndexOf(":");
+                        try
                         {
-                            if (singleid != 0 && singleid != id)
+                            rate = Double.Parse(line.Substring(colon_index + 1));
+                        }
+                        catch (FormatException e)
+                        {
+                            log.Add(new DecodeLog(WARNING, "小節の拡大率が不正です : " + line));
+                        }
+                        break;
+                    // BPM変化
+                    case BPM_CHANGE:
+                        this.processData(line, (pos, data) =>
+                        {
+                            if (@base == 62)
                             {
-                                singleid = -1;
-                                break;
+                                data = ChartDecoder.parseInt36(ChartDecoder.toBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
                             }
-                            else
+                            bpmchange.put(pos, (double)(data / 36) * 16 + (data % 36));
+                        });
+                        break;
+                    // POORアニメーション
+                    case POOR_PLAY:
+                        poor = this.splitData(line);
+                        // アニメーションが単一画像のみの定義の場合、0を除外する(ミスレイヤーチャンネルの定義が曖昧)
+                        int singleid = 0;
+                        foreach (int id in poor)
+                        {
+                            if (id != 0)
                             {
-                                singleid = id;
+                                if (singleid != 0 && singleid != id)
+                                {
+                                    singleid = -1;
+                                    break;
+                                }
+                                else
+                                {
+                                    singleid = id;
+                                }
                             }
                         }
                         if (singleid != -1)
+                        {
                             poor = new int[] { singleid };
+                        }
                         break;
-                    case Channel.BpmChangeExtend:   // BPM変化(拡張)
-                        processData(line, (pos, data) =>
+                    // BPM変化(拡張)
+                    case BPM_CHANGE_EXTEND:
+                        this.processData(line, (pos, data) =>
                         {
-                            if (!processor.BpmTable.TryGetValue(data, out var bpm))
+                            Double bpm = bpmtable[data];
+                            if (bpm != null)
                             {
-                                logs.Add(new DecodeLog(State.Warning, $"未定義のBPM変化を参照しています : {data}"));
-                                return;
+                                bpmchange.put(pos, bpm);
                             }
-                            if (!bpms.ContainsKey(pos))
-                                bpms.Add(pos, bpm);
+                            else
+                            {
+                                log.Add(new DecodeLog(WARNING, "未定義のBPM変化を参照しています : " + data));
+                            }
                         });
                         break;
-                    case Channel.Stop:          // ストップシーケンス
-                        processData(line, (pos, data) =>
+                    // ストップシーケンス
+                    case STOP:
+                        this.processData(line, (pos, data) =>
                         {
-                            if (!processor.StopTable.TryGetValue(data, out var st))
+                            Double st = stoptable[data];
+                            if (st != null)
                             {
-                                logs.Add(new DecodeLog(State.Warning, $"未定義のSTOPを参照しています : {data}"));
-                                return;
+                                stop.put(pos, st);
                             }
-                            if (!stop.ContainsKey(pos))
-                                stop.Add(pos, st);
+                            else
+                            {
+                                log.Add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + data));
+                            }
                         });
                         break;
-                    case Channel.Scroll:
-                        processData(line, (pos, data) =>
+                    // scroll
+                    case SCROLL:
+                        this.processData(line, (pos, data) =>
                         {
-                            if (!processor.ScrollTable.TryGetValue(data, out var st))
+                            Double st = scrolltable[data];
+                            if (st != null)
                             {
-                                logs.Add(new DecodeLog(State.Warning, $"未定義のSCROLLを参照しています : {data}"));
-                                return;
+                                scroll.put(pos, st);
                             }
-                            if (!scroll.ContainsKey(pos))
-                                scroll.Add(pos, st);
+                            else
+                            {
+                                log.Add(new DecodeLog(WARNING, "未定義のSCROLLを参照しています : " + data));
+                            }
                         });
                         break;
                 }
 
-                Channel baseCH = 0;
-                var ch2 = -1;
-                foreach (Channel ch in noteChannels)
+                int basech = 0;
+                int ch2 = -1;
+                foreach (int ch in NOTE_CHANNELS)
                 {
-                    if ((int)ch <= channel && channel <= (int)ch + 8)
+                    if (ch <= channel && channel <= ch + 8)
                     {
-                        baseCH = ch;
-                        ch2 = channel - (int)ch;
-                        channelLines.Add(line);
+                        basech = ch;
+                        ch2 = channel - ch;
+                        channellines.Add(line);
                         break;
                     }
                 }
-                // 5/10KEY -> 7/14KEY
+                // 5/10KEY  => 7/14KEY
                 if (ch2 == 7 || ch2 == 8)
                 {
-                    var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat7K : (model.Mode == Mode.Beat10K ? Mode.Beat14K : null);
+                    Mode mode = (model.getMode() == Mode.BEAT_5K) ? Mode.BEAT_7K : (model.getMode() == Mode.BEAT_10K ? Mode.BEAT_14K : null);
                     if (mode != null)
                     {
-                        processData(line, (pos, data) => {
-                            model.Mode = mode;
+                        this.processData(line, (pos, data) =>
+                        {
+                            model.setMode(mode);
                         });
                     }
                 }
-                // 5/7KEY -> 10/14KEY
-                if (baseCH == Channel.P2KeyBase || baseCH == Channel.P2InvisibleKeyBase || baseCH == Channel.P2LongKeyBase || baseCH == Channel.P2MineKeyBase)
+                // 5/7KEY  => 10/14KEY			
+                if (basech == P2_KEY_BASE || basech == P2_INVISIBLE_KEY_BASE || basech == P2_LONG_KEY_BASE || basech == P2_MINE_KEY_BASE)
                 {
-                    var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat7K : (model.Mode == Mode.Beat10K ? Mode.Beat14K : null);
+                    Mode mode = (model.getMode() == Mode.BEAT_5K) ? Mode.BEAT_10K : (model.getMode() == Mode.BEAT_7K ? Mode.BEAT_14K : null);
                     if (mode != null)
                     {
-                        processData(line, (pos, data) => {
-                            model.Mode = mode;
+                        this.processData(line, (pos, data) =>
+                        {
+                            model.setMode(mode);
                         });
                     }
                 }
             }
         }
 
-        int[] beat5ChannelAssign = { 0, 1, 2, 3, 4, 5, -1, -1, -1, 6, 7, 8, 9, 10, 11, -1, -1, -1 };
-        int[] beat7ChannelAssign = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
-        int[] popnChannelAssign = { 0, 1, 2, 3, 4, -1, -1, -1, -1, -1, 5, 6, 7, 8, -1, -1, -1, -1 };
-
-        public void MakeTimeLine(string[] wavMap, string[] bgaMap, SortedDictionary<double, TimeLineCache> tlCache, List<LongNote>[] lnList, LongNote[] startLN)
+        private int[] splitData(String line)
         {
-            var baseTL = getTimeLine(sectionNum, tlCache);
-            baseTL.IsSectionLine = true;
+            int @base = model.getBase();
+            int findex = line.IndexOf(":") + 1;
+            int lindex = line.Length;
+            int split = (lindex - findex) / 2;
+            int[] result = new int[split];
+            for (int i = 0; i < split; i++)
+            {
+                if (@base == 62)
+                {
+                    result[i] = ChartDecoder.parseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
+                }
+                else
+                {
+                    result[i] = ChartDecoder.parseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
+                }
+                if (result[i] == -1)
+                {
+                    log.Add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
+                    result[i] = 0;
+                }
+            }
+            return result;
+        }
+
+        private void processData(String line, Action<double, int> processor)
+        {
+            int @base = model.getBase();
+            int findex = line.IndexOf(":") + 1;
+            int lindex = line.Length;
+            int split = (lindex - findex) / 2;
+            int result;
+            for (int i = 0; i < split; i++)
+            {
+                if (@base == 62)
+                {
+                    result = ChartDecoder.parseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
+                }
+                else
+                {
+                    result = ChartDecoder.parseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
+                }
+                if (result > 0)
+                {
+                    processor((double)i / split, result);
+                }
+                else if (result == -1)
+                {
+                    log.Add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
+                }
+            }
+        }
+
+        private SortedDictionary<Double, Double> bpmchange = new SortedDictionary<Double, Double>();
+        private SortedDictionary<Double, Double> stop = new SortedDictionary<Double, Double>();
+        private SortedDictionary<Double, Double> scroll = new SortedDictionary<Double, Double>();
+
+        private static int[] CHANNELASSIGN_BEAT5 = { 0, 1, 2, 3, 4, 5, -1, -1, -1, 6, 7, 8, 9, 10, 11, -1, -1, -1 };
+        private static int[] CHANNELASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
+        private static int[] CHANNELASSIGN_POPN = { 0, 1, 2, 3, 4, -1, -1, -1, -1, -1, 5, 6, 7, 8, -1, -1, -1, -1 };
+
+        private SortedDictionary<Double, TimeLineCache> tlcache;
+
+        /**
+         * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
+         */
+        public void makeTimeLines(int[] wavmap, int[] bgamap, SortedDictionary<Double, TimeLineCache> tlcache, List<LongNote>[] lnlist, LongNote[] startln)
+        {
+            int lnobj = model.getLnobj();
+            int lnmode = model.getLnmode();
+            this.tlcache = tlcache;
+            int[] cassign = model.getMode() == Mode.POPN_9K ? CHANNELASSIGN_POPN :
+               (model.getMode() == Mode.BEAT_7K || model.getMode() == Mode.BEAT_14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
+            int @base = model.getBase();
+            // 小節線追加
+            TimeLine basetl = getTimeLine(sectionnum);
+            basetl.setSectionLine(true);
 
             if (poor.Length > 0)
             {
-                var poors = new Sequence[poor.Length + 1];
-                var poorTime = 500;
-                for (var i = 0; i < poor.Length; i++)
+                Layer.Sequence[] poors = new Layer.Sequence[poor.Length + 1];
+                int poortime = 500;
+
+                for (int i = 0; i < poor.Length; i++)
                 {
-                    if (!string.IsNullOrEmpty(bgaMap[poor[i]]))
+                    if (bgamap[poor[i]] != -2)
                     {
-                        poors[i] = new Sequence(i * poorTime / poor.Length, poor[i]);
+                        poors[i] = new Layer.Sequence((long)(i * poortime / poor.Length), bgamap[poor[i]]);
                     }
                     else
                     {
-                        poors[i] = new Sequence(i * poorTime / poor.Length, -1);
+                        poors[i] = new Layer.Sequence((long)(i * poortime / poor.Length), -1);
                     }
                 }
-                poors[poors.Length - 1] = new Sequence(poorTime);
-                baseTL.EventLayer = new[] { new Layer(new Event(EventType.Miss, 1), new Sequence[][] { poors }) };
+                poors[poors.Length - 1] = new Layer.Sequence(poortime);
+                basetl.setEventlayer(new Layer[] { new Layer(new Layer.Event(EventType.MISS, 1), new Layer.Sequence[][] { poors }) });
             }
+            // BPM変化。ストップシーケンステーブル準備
+            var stops = stop.GetEnumerator();
+            var ste = stops.MoveNext() ? stops.Current : default;
+            var bpms = bpmchange.GetEnumerator();
+            var bce = bpms.MoveNext() ? bpms.Current : default;
+            var scrolls = scroll.GetEnumerator();
+            var sce = scrolls.MoveNext() ? scrolls.Current : default;
 
-            var hasStop = stop.Keys.Any();
-            var ste = stop.FirstOrDefault();
-            var hasBpm = bpms.Keys.Any();
-            var bce = bpms.FirstOrDefault();
-            var hasScroll = scroll.Keys.Any();
-            var sce = scroll.FirstOrDefault();
-            if (hasStop || hasBpm || hasScroll)
+            while (!ste.Equals(default(KeyValuePair<double, double>)) || !bce.Equals(default(KeyValuePair<double, double>)) || !sce.Equals(default(KeyValuePair<double, double>)))
             {
-                var bc = hasBpm ? bce.Key : 2;
-                var st = hasStop ? ste.Key : 2;
-                var sc = hasScroll ? sce.Key : 2;
+                double bc = !bce.Equals(default(KeyValuePair<double, double>)) ? bce.Key : 2;
+                double st = !ste.Equals(default(KeyValuePair<double, double>)) ? ste.Key : 2;
+                double sc = !sce.Equals(default(KeyValuePair<double, double>)) ? sce.Key : 2;
                 if (sc <= st && sc <= bc)
                 {
-                    getTimeLine(sectionNum + sc * rate, tlCache).Scroll = sce.Value;
-                    var scq = scroll.SkipWhile(s => s.Key != sce.Key);
-                    hasScroll = scq.Count() > 1;
-                    if (hasScroll)
-                    {
-                        sce = scq.Skip(1).First();
-                    }
+                    getTimeLine(sectionnum + sc * rate).setScroll(sce.Value);
+                    sce = scrolls.MoveNext() ? scrolls.Current : default;
                 }
-                else if (bc >= st)
+                else if (bc <= st)
                 {
-                    getTimeLine(sectionNum + bc * rate, tlCache).Scroll = bce.Value;
-                    var bcq = bpms.SkipWhile(b => b.Key != bce.Key);
-                    hasBpm = bcq.Count() > 1;
-                    if (hasBpm)
-                    {
-                        bce = bcq.Skip(1).First();
-                    }
+                    getTimeLine(sectionnum + bc * rate).setBPM(bce.Value);
+                    bce = bpms.MoveNext() ? bpms.Current : default;
                 }
                 else if (st <= 1)
                 {
-                    var tl = getTimeLine(sectionNum + st * rate, tlCache);
-                    tl.StopMicrosecond = (long)(1000.0 * 1000 * 60 * 4 * ste.Value / tl.Bpm);
-                    var stq = stop.SkipWhile(s => s.Key != ste.Key);
-                    hasStop = stq.Count() > 1;
-                    if (hasStop)
-                    {
-                        ste = stq.Skip(1).First();
-                    }
+                    TimeLine tl = getTimeLine(sectionnum + ste.Key * rate);
+                    tl.setStop((long)(1000.0 * 1000 * 60 * 4 * ste.Value / (tl.getBPM())));
+                    ste = stops.MoveNext() ? stops.Current : default;
                 }
             }
 
-            var cassign = model.Mode == Mode.Popn9K ? popnChannelAssign :
-                model.Mode == Mode.Beat7K || model.Mode == Mode.Beat14K ? beat7ChannelAssign : beat5ChannelAssign;
-            foreach (var line in channelLines)
+            foreach (String line in channellines)
             {
-                Utility.TryParseInt36(line[4..6], out var channel);
-                var key = 0;
-                var q = Enum.GetValues(typeof(Channel)).Cast<Channel>()
-                    .Where(nc => (int)nc <= channel && channel < (int)nc + 9);
-                if (q.Any())
+                int channel = ChartDecoder.parseInt36(line[4], line[5]);
+                int tmpkey = 0;
+                if (channel >= P1_KEY_BASE && channel < P1_KEY_BASE + 9)
                 {
-                    var note = q.First();
-                    key = cassign[channel - (int)note];
-                    channel = note switch
-                    {
-                        Channel.P1KeyBase or Channel.P2KeyBase => (int)Channel.P1KeyBase,
-                        Channel.P1InvisibleKeyBase or Channel.P2InvisibleKeyBase => (int)Channel.P1InvisibleKeyBase,
-                        Channel.P1LongKeyBase or Channel.P2LongKeyBase => (int)Channel.P1LongKeyBase,
-                        Channel.P1MineKeyBase or Channel.P2MineKeyBase => (int)Channel.P1MineKeyBase,
-                        _ => 0
-                    };
+                    tmpkey = cassign[channel - P1_KEY_BASE];
+                    channel = P1_KEY_BASE;
                 }
-                if (key == -1)
-                    continue;
-                switch ((Channel)channel)
+                else if (channel >= P2_KEY_BASE && channel < P2_KEY_BASE + 9)
                 {
-                    case Channel.P1KeyBase:
-                        // normal note, lnobj
-                        processData(line, (pos, data) =>
+                    tmpkey = cassign[channel - P2_KEY_BASE + 9];
+                    channel = P1_KEY_BASE;
+                }
+                else if (channel >= P1_INVISIBLE_KEY_BASE && channel < P1_INVISIBLE_KEY_BASE + 9)
+                {
+                    tmpkey = cassign[channel - P1_INVISIBLE_KEY_BASE];
+                    channel = P1_INVISIBLE_KEY_BASE;
+                }
+                else if (channel >= P2_INVISIBLE_KEY_BASE && channel < P2_INVISIBLE_KEY_BASE + 9)
+                {
+                    tmpkey = cassign[channel - P2_INVISIBLE_KEY_BASE + 9];
+                    channel = P1_INVISIBLE_KEY_BASE;
+                }
+                else if (channel >= P1_LONG_KEY_BASE && channel < P1_LONG_KEY_BASE + 9)
+                {
+                    tmpkey = cassign[channel - P1_LONG_KEY_BASE];
+                    channel = P1_LONG_KEY_BASE;
+                }
+                else if (channel >= P2_LONG_KEY_BASE && channel < P2_LONG_KEY_BASE + 9)
+                {
+                    tmpkey = cassign[channel - P2_LONG_KEY_BASE + 9];
+                    channel = P1_LONG_KEY_BASE;
+                }
+                else if (channel >= P1_MINE_KEY_BASE && channel < P1_MINE_KEY_BASE + 9)
+                {
+                    tmpkey = cassign[channel - P1_MINE_KEY_BASE];
+                    channel = P1_MINE_KEY_BASE;
+                }
+                else if (channel >= P2_MINE_KEY_BASE && channel < P2_MINE_KEY_BASE + 9)
+                {
+                    tmpkey = cassign[channel - P2_MINE_KEY_BASE + 9];
+                    channel = P1_MINE_KEY_BASE;
+                }
+                int key = tmpkey;
+                if (key == -1)
+                {
+                    continue;
+                }
+                switch (channel)
+                {
+                    case P1_KEY_BASE:
+                        this.processData(line, (pos, data) =>
                         {
-                            var tl = getTimeLine(sectionNum + rate * pos, tlCache);
-                            if (tl.ExistNote(key))
-                                logs.Add(new DecodeLog(State.Warning, $"通常ノート追加時に衝突が発生しました : {key + 1}:{tl.Time}"));
-                            if (data != model.LNObj)
+                            // normal note, lnobj
+                            TimeLine tl = getTimeLine(sectionnum + rate * pos);
+                            if (tl.existNote(key))
                             {
-                                tl.SetNote(key, new NormalNote(data));
-                                return;
+                                log.Add(new DecodeLog(WARNING, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
+                                        + tl.getTime()));
                             }
-
-                            // LN終端処理
-                            foreach (var e in tlCache.OrderByDescending(t => t.Key))
-                            {
-                                if (e.Key >= tl.Section)
-                                    continue;
-                                var tl2 = e.Value.TimeLine;
-                                if (!tl2.ExistNote(key))
-                                    continue;
-                                var note = tl2.GetNote(key);
-                                if (note is NormalNote)
-                                {
-                                    // LOOBJの直前のノートをLNに差し替える
-                                    var ln = new LongNote(note.Wav);
-                                    ln.Type = model.LNMode;
-                                    tl2.SetNote(key, ln);
-                                    var lnEnd = new LongNote(-2);
-                                    tl.SetNote(key, lnEnd);
-                                    ln.Pair = lnEnd;
-                                    if (lnList[key] == null)
-                                        lnList[key] = new List<LongNote>();
-                                    lnList[key].Add(ln);
-                                    break;
-                                }
-                                else if (note is LongNote ln && ln.Pair == null)
-                                {
-                                    logs.Add(new DecodeLog(State.Warning, $"LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: {key + 1} - Section : {tl2.Section} - {tl.Section}"));
-                                    var lnEnd = new LongNote(-2);
-                                    tl.SetNote(key, lnEnd);
-                                    ln.Pair = lnEnd;
-                                    if (lnList[key] == null)
-                                        lnList[key] = new List<LongNote>();
-                                    lnList[key].Add(ln);
-                                    break;
-                                }
-                                else
-                                {
-                                    logs.Add(new DecodeLog(State.Warning, $"LNオブジェクトの対応が取れません。レーン: {key} - Time(ms):{tl2.Time}"));
-                                    break;
-                                }
-                            }
-                        });
-                        break;
-                    case Channel.P1InvisibleKeyBase:
-                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).SetHiddenNote(key, new NormalNote(data)));
-                        break;
-                    case Channel.P1LongKeyBase:
-                        processData(line, (pos, data) =>
-                        {
-                            // long note
-                            var tl = getTimeLine(sectionNum + rate * pos, tlCache);
-                            var insideLN = lnList[key] != null
-                                && lnList[key].Any(ln => ln.Section <= tl.Section && tl.Section <= ln.Pair.Section);
-
-                            if (insideLN)
-                            {
-                                if (startLN[key] == null)
-                                {
-                                    var ln = new LongNote(data);
-                                    ln.Section = double.MinValue;
-                                    startLN[key] = ln;
-                                    logs.Add(new DecodeLog(State.Warning, $"LN内にLN開始ノートを定義しようとしています : {key + 1} - Section : {tl.Section} - Time(ms):{tl.Time}"));
-                                }
-                                else
-                                {
-                                    if (startLN[key].Section != double.MinValue)
-                                    {
-                                        tlCache[startLN[key].Section].TimeLine.SetNote(key, null);
-                                    }
-                                    startLN[key] = null;
-                                    logs.Add(new DecodeLog(State.Warning, $"LN内にLN終端ノートを定義しようとしています : {key + 1} - Section : {tl.Section} - Time(ms):{tl.Time}"));
-                                }
-                                return;
-                            }
-
-                            // LN処理
-                            if (startLN[key] == null)
-                            {
-                                if (tl.ExistNote(key))
-                                {
-                                    var note = tl.GetNote(key);
-                                    logs.Add(new DecodeLog(State.Warning, $"LN開始位置に通常ノートが存在します。レーン: {key + 1} - Time(ms):{tl.Time}"));
-                                    if (note is NormalNote && note.Wav != data)
-                                        tl.AddBackGroundNote(note);
-                                }
-                                var ln = new LongNote(data);
-                                tl.SetNote(key, ln);
-                            }
-                            else if (startLN[key].Section == double.MinValue)
-                            {
-                                startLN[key] = null;
-                            }
-                            else
+                            if (data == lnobj)
                             {
                                 // LN終端処理
-                                foreach (var e in tlCache.OrderByDescending(t => t.Key))
+                                // TODO 高速化のために直前のノートを記録しておく
+                                foreach (var e in tlcache)
                                 {
-                                    if (e.Key >= tl.Section)
-                                        continue;
-                                    var tl2 = e.Value.TimeLine;
-                                    if (tl2.Section == startLN[key].Section)
+                                    if (e.Key >= tl.getSection())
                                     {
-                                        var note = startLN[key];
-                                        note.Type = model.LNMode;
-                                        var noteEnd = new LongNote(startLN[key].Wav != data ? data : -2);
-                                        tl.SetNote(key, noteEnd);
-                                        if (lnList[key] == null)
-                                            lnList[key] = new List<LongNote>();
-                                        lnList[key].Add(note);
+                                        continue;
+                                    }
+                                    TimeLine tl2 = e.Value.timeline;
+                                    if (tl2.existNote(key))
+                                    {
+                                        Note note = tl2.getNote(key);
+                                        if (note is NormalNote)
+                                        {
+                                            // LNOBJの直前のノートをLNに差し替える
+                                            LongNote ln = new LongNote(note.getWav());
+                                            ln.setType(lnmode);
+                                            tl2.setNote(key, ln);
+                                            LongNote lnend = new LongNote(-2);
+                                            tl.setNote(key, lnend);
+                                            ln.setPair(lnend);
+
+                                            if (lnlist[key] == null)
+                                            {
+                                                lnlist[key] = new List<LongNote>();
+                                            }
+                                            lnlist[key].Add(ln);
+                                            break;
+                                        }
+                                        else if (note is LongNote && ((LongNote)note).getPair() == null)
+                                        {
+                                            log.Add(new DecodeLog(WARNING,
+                                                    "LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
+                                                            + tl2.getSection() + " - " + tl.getSection()));
+                                            LongNote lnend = new LongNote(-2);
+                                            tl.setNote(key, lnend);
+                                            ((LongNote)note).setPair(lnend);
+
+                                            if (lnlist[key] == null)
+                                            {
+                                                lnlist[key] = new List<LongNote>();
+                                            }
+                                            lnlist[key].Add((LongNote)note);
+                                            startln[key] = null;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            log.Add(new DecodeLog(WARNING, "LNオブジェクトの対応が取れません。レーン: " + key
+                                                    + " - Time(ms):" + tl2.getTime()));
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                tl.setNote(key, new NormalNote(wavmap[data]));
+                            }
+                        });
+                        break;
+
+                    case P1_INVISIBLE_KEY_BASE:
+                        this.processData(line, (pos, data) =>
+                        {
+                            getTimeLine(sectionnum + rate * pos).setHiddenNote(key, new NormalNote(wavmap[data]));
+                        });
+                        break;
+                    case P1_LONG_KEY_BASE:
+                        this.processData(line, (pos, data) =>
+                        {
+                            // long note
+                            TimeLine tl = getTimeLine(sectionnum + rate * pos);
+                            bool insideln = false;
+                            if (!insideln && lnlist[key] != null)
+                            {
+                                double section = tl.getSection();
+                                foreach (LongNote ln in lnlist[key])
+                                {
+                                    if (ln.getSection() <= section && section <= ln.getPair().getSection())
+                                    {
+                                        insideln = true;
                                         break;
                                     }
-                                    else if (tl2.ExistNote(key))
+                                }
+                            }
+
+                            if (!insideln)
+                            {
+                                // LN処理
+                                if (startln[key] == null)
+                                {
+                                    if (tl.existNote(key))
                                     {
-                                        var note = tl2.GetNote(key);
-                                        logs.Add(new DecodeLog(State.Warning, $"LN内に通常ノートが存在します。レーン: {key + 1} - Time(ms):{tl2.Time}"));
-                                        tl2.SetNote(key, null);
-                                        if (note is NormalNote)
-                                            tl2.AddBackGroundNote(note);
+                                        Note note = tl.getNote(key);
+                                        log.Add(new DecodeLog(WARNING, "LN開始位置に通常ノートが存在します。レーン: "
+                                                + (key + 1) + " - Time(ms):" + tl.getTime()));
+                                        if (note is NormalNote && note.getWav() != wavmap[data])
+                                        {
+                                            tl.addBackGroundNote(note);
+                                        }
                                     }
+                                    LongNote ln = new LongNote(wavmap[data]);
+                                    tl.setNote(key, ln);
+                                    startln[key] = ln;
+                                }
+                                else if (startln[key].getSection() == Double.MinValue)
+                                {
+                                    startln[key] = null;
+                                }
+                                else
+                                {
+                                    // LN終端処理
+                                    foreach (var e in tlcache)
+                                    {
+                                        if (e.Key >= tl.getSection())
+                                        {
+                                            continue;
+                                        }
+
+                                        TimeLine tl2 = e.Value.timeline;
+                                        if (tl2.getSection() == startln[key].getSection())
+                                        {
+                                            Note note = startln[key];
+                                            ((LongNote)note).setType(lnmode);
+                                            LongNote noteend = new LongNote(startln[key].getWav() != wavmap[data] ? wavmap[data] : -2);
+                                            tl.setNote(key, noteend);
+                                            ((LongNote)note).setPair(noteend);
+                                            if (lnlist[key] == null)
+                                            {
+                                                lnlist[key] = new List<LongNote>();
+                                            }
+                                            lnlist[key].Add((LongNote)note);
+
+                                            startln[key] = null;
+                                            break;
+                                        }
+                                        else if (tl2.existNote(key))
+                                        {
+                                            Note note = tl2.getNote(key);
+                                            log.Add(new DecodeLog(WARNING, "LN内に通常ノートが存在します。レーン: "
+                                                    + (key + 1) + " - Time(ms):" + tl2.getTime()));
+                                            tl2.setNote(key, null);
+                                            if (note is NormalNote)
+                                            {
+                                                tl2.addBackGroundNote(note);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (startln[key] == null)
+                                {
+                                    LongNote ln = new LongNote(wavmap[data]);
+                                    ln.setSection(Double.MinValue);
+                                    startln[key] = ln;
+                                    log.Add(new DecodeLog(WARNING, "LN内にLN開始ノートを定義しようとしています : "
+                                            + (key + 1) + " - Section : " + tl.getSection() + " - Time(ms):" + tl.getTime()));
+                                }
+                                else
+                                {
+                                    if (startln[key].getSection() != Double.MinValue)
+                                    {
+                                        tlcache[startln[key].getSection()].timeline.setNote(key, null);
+                                    }
+                                    startln[key] = null;
+                                    log.Add(new DecodeLog(WARNING, "LN内にLN終端ノートを定義しようとしています : "
+                                            + (key + 1) + " - Section : " + tl.getSection() + " - Time(ms):" + tl.getTime()));
                                 }
                             }
                         });
                         break;
-                    case Channel.P1MineKeyBase:
+
+                    case P1_MINE_KEY_BASE:
                         // mine note
-                        processData(line, (pos, data) =>
+                        this.processData(line, (pos, data) =>
                         {
-                            var tl = getTimeLine(sectionNum + rate * pos, tlCache);
-                            var inSideLN = tl.ExistNote(key);
-                            if (!inSideLN && lnList[key] != null)
+                            TimeLine tl = getTimeLine(sectionnum + rate * pos);
+                            bool insideln = tl.existNote(key);
+                            if (!insideln && lnlist[key] != null)
                             {
-                                inSideLN = lnList[key].Any(ln => ln.Section <= tl.Section && tl.Section <= ln.Pair.Section);
+                                double section = tl.getSection();
+                                foreach (LongNote ln in lnlist[key])
+                                {
+                                    if (ln.getSection() <= section && section <= ln.getPair().getSection())
+                                    {
+                                        insideln = true;
+                                        break;
+                                    }
+                                }
                             }
-                            if (!inSideLN)
+
+                            if (!insideln)
                             {
-                                tl.SetNote(key, new MineNote(string.IsNullOrEmpty(wavMap[0]) ? -2 : 0, data));
+                                if (@base == 62)
+                                {
+                                    data = ChartDecoder.parseInt36(ChartDecoder.toBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
+                                }
+                                tl.setNote(key, new MineNote(wavmap[0], data));
                             }
                             else
                             {
-                                logs.Add(new DecodeLog(State.Warning, $"地雷ノート追加時に衝突が発生しました : {key + 1}:{tl.Time}"));
+                                log.Add(new DecodeLog(WARNING, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
+                                        + tl.getTime()));
                             }
                         });
                         break;
-                    case Channel.LaneAutoPlay:
-                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).AddBackGroundNote(new NormalNote(data)));
+                    case LANE_AUTOPLAY:
+                        // BGレーン
+                        this.processData(line, (pos, data) =>
+                        {
+                            getTimeLine(sectionnum + rate * pos).addBackGroundNote(new NormalNote(wavmap[data]));
+                        });
                         break;
-                    case Channel.BgaPlay:
-                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).BgaID = data);
+                    case BGA_PLAY:
+                        this.processData(line, (pos, data) =>
+                        {
+                            getTimeLine(sectionnum + rate * pos).setBGA(bgamap[data]);
+                        });
                         break;
-                    case Channel.LayerPlay:
-                        processData(line, (pos, data) => getTimeLine(sectionNum + rate * pos, tlCache).LayerID = data);
+                    case LAYER_PLAY:
+                        this.processData(line, (pos, data) =>
+                        {
+                            getTimeLine(sectionnum + rate * pos).setLayer(bgamap[data]);
+                        });
                         break;
+
                 }
             }
         }
 
-        private TimeLine getTimeLine(double section, SortedDictionary<double, TimeLineCache> tlCache)
+        private TimeLine getTimeLine(double section)
         {
-            if (tlCache.TryGetValue(section, out var tlc))
-                return tlc.TimeLine;
-            var le = tlCache.OrderByDescending(t => t.Key).FirstOrDefault(t => t.Key < section);
-            var scroll = le.Value.TimeLine.Scroll;
-            var bpm = le.Value.TimeLine.Bpm;
-            var time = le.Value.Time + le.Value.TimeLine.StopMicrosecond + (240000.0 * 1000 * (section - le.Key)) / bpm;
+            if (tlcache.TryGetValue(section, out var tlc))
+                return tlc.timeline;
 
-            var tl = new TimeLine(section, (long)time, model.Mode.Key);
-            tl.Bpm = bpm;
-            tl.Scroll = scroll;
-            tlCache.Add(section, new TimeLineCache(time, tl));
+            var le = tlcache.LastOrDefault(c => c.Key < section);
+            double scroll = le.Value.timeline.getScroll();
+            double bpm = le.Value.timeline.getBPM();
+            double time = le.Value.time + le.Value.timeline.getMicroStop() + (240000.0 * 1000 * (section - le.Key)) / bpm;
+
+            TimeLine tl = new TimeLine(section, (long)time, model.getMode().key);
+            tl.setBPM(bpm);
+            tl.setScroll(scroll);
+            tlcache.put(section, new TimeLineCache(time, tl));
             return tl;
         }
-
-        private IEnumerable<int> splitData(string line)
-        {
-            var findex = line.IndexOf(":") + 1;
-            var lindex = line.Length;
-            var split = (lindex - findex) / 2;
-            foreach (var data in line[(line.IndexOf(":") + 1)..].Select((l, i) => (l,i)).GroupBy(x => x.i / 2).Select(g => new string(g.Select(x => x.l).ToArray())))
-            {
-                if (!Utility.TryParseInt36(data, out var result))
-                {
-                    logs.Add(new DecodeLog(State.Warning, $"{model.Title}:チャンネル定義中の不正な値:{line}"));
-                    yield return 0;
-                    continue;
-                }
-                yield return result;
-            }
-        }
-
-        private void processData(string line, Action<double, int> processser)
-        {
-            var datas = line[(line.IndexOf(":") + 1)..].Select((l, i) => (l, i)).GroupBy(x => x.i / 2).Select(g => new string(g.Select(x => x.l).ToArray()));
-            var split = datas.Count();
-            foreach (var (data, i) in datas.Select((da, idx) => (da, idx)))
-            {
-                if (!Utility.TryParseInt36(data, out var result))
-                {
-                    logs.Add(new DecodeLog(State.Warning, $"{model.Title}:チャンネル定義中の不正な値:{line}"));
-                    continue;
-                }
-                if (result > 0)
-                    processser((double)i / split, result);
-            }
-        }
-    }
-
-    public enum Channel
-    {
-        Illegal = -1,
-        LaneAutoPlay = 1,
-        SectionRate = 2,
-        BpmChange = 3,
-        BgaPlay = 4,
-        PoorPlay = 6,
-        LayerPlay = 7,
-        BpmChangeExtend = 8,
-        Stop = 9,
-        Scroll = 1020,
-        P1KeyBase = 1 * 36 + 1,
-        P2KeyBase = 2 * 36 + 1,
-        P1InvisibleKeyBase = 3 * 36 + 1,
-        P2InvisibleKeyBase = 4 * 36 + 1,
-        P1LongKeyBase = 5 * 36 + 1,
-        P2LongKeyBase = 6 * 36 + 1,
-        P1MineKeyBase = 13 * 36 + 1,
-        P2MineKeyBase = 14 * 36 + 1
     }
 }
