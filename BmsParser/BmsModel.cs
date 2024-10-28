@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using BmsParser;
+using BmsParser.Bmson;
 
 namespace BmsParser
 {

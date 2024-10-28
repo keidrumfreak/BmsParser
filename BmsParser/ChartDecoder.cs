@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using BmsParser;
+using BmsParser.Bmson;
 
 namespace BmsParser
 {
@@ -88,7 +90,7 @@ namespace BmsParser
 
         public static int ParseInt36(char c1, char c2)
         {
-            var result = 0;
+            int result;
             if (c1 >= '0' && c1 <= '9')
             {
                 result = (c1 - '0') * 36;
@@ -139,7 +141,7 @@ namespace BmsParser
 
         public static int ParseInt62(char c1, char c2)
         {
-            var result = 0;
+            int result;
             if (c1 >= '0' && c1 <= '9')
             {
                 result = (c1 - '0') * 62;
@@ -201,12 +203,12 @@ namespace BmsParser
                 {
                     sb.Append('0');
                 }
-                @decimal = @decimal / 62;
+                @decimal /= 62;
             }
             return new string(sb.ToString().Reverse().ToArray());
         }
 
-        protected void printLog(string path)
+        protected void PrintLog(string path)
         {
             log.ForEach(log =>
             {
@@ -223,6 +225,18 @@ namespace BmsParser
                         break;
                 }
             });
+        }
+
+        protected static string GetSha256Hash(byte[] input)
+        {
+            var arr = SHA256.HashData(input);
+            return BitConverter.ToString(arr).ToLower().Replace("-", "");
+        }
+
+        protected static string GetMd5Hash(byte[] input)
+        {
+            var arr = MD5.HashData(input);
+            return BitConverter.ToString(arr).ToLower().Replace("-", "");
         }
     }
 }

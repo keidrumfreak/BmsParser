@@ -521,8 +521,8 @@ namespace BmsParser
                 {
                     log.Add(new DecodeLog(State.Warning, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
                 }
-                model.MD5 = getMd5Hash(data);
-                model.Sha256 = getSha256Hash(data);
+                model.MD5 = GetMd5Hash(data);
+                model.Sha256 = GetSha256Hash(data);
                 log.Add(new DecodeLog(State.Info, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
                 //Logger.getGlobal().fine("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
 
@@ -538,7 +538,7 @@ namespace BmsParser
                 }
 
                 model.ChartInformation = new ChartInformation(path, lntype, selectedRandom);
-                printLog(path);
+                PrintLog(path);
                 return model;
             }
             catch (IOException e)
@@ -558,7 +558,7 @@ namespace BmsParser
             return null;
         }
 
-        private bool matchesReserveWord(string line, string s)
+        private static bool matchesReserveWord(string line, string s)
         {
             var len = s.Length;
             if (line.Length <= len)
@@ -575,38 +575,6 @@ namespace BmsParser
                 }
             }
             return true;
-        }
-
-        ///**
-        // * バイトデータを16進数文字列表現に変換する
-        // * 
-        // * @param data
-        // *            バイトデータ
-        // * @returnバイトデータの16進数文字列表現
-        // */
-        //public static String convertHexString(byte[] data)
-        //{
-        //    StringBuilder sb = new StringBuilder(data.Length * 2);
-        //    foreach (byte b in data)
-        //    {
-        //        sb.Append(Character.forDigit(b >> 4 & 0xf, 16));
-        //        sb.Append(Character.forDigit(b & 0xf, 16));
-        //    }
-        //    return sb.ToString();
-        //}
-
-        private string getMd5Hash(byte[] input)
-        {
-            var md5 = MD5.Create();
-            var arr = md5.ComputeHash(input);
-            return BitConverter.ToString(arr).ToLower().Replace("-", "");
-        }
-
-        private string getSha256Hash(byte[] input)
-        {
-            var sha256 = SHA256.Create();
-            var arr = sha256.ComputeHash(input);
-            return BitConverter.ToString(arr).ToLower().Replace("-", "");
         }
     }
 
