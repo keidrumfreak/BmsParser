@@ -165,7 +165,7 @@ namespace BmsParser
             set
             {
                 mode = value;
-                foreach (TimeLine tl in Timelines)
+                foreach (var tl in Timelines)
                 {
                     tl.setLaneCount(mode.key);
                 }
@@ -221,68 +221,69 @@ namespace BmsParser
 
         public int LNObj { get; set; } = -1;
 
-        public Dictionary<string, string> Values { get; } = new();
+        public Dictionary<string, string> Values { get; } = [];
 
-        /**
-         * 進数指定
-         */
-        private int @base = 36;
+        public EventLane EventLane => new(this);
 
-        public BmsModel()
+        public Lane[] Lanes => Enumerable.Range(0, Mode.key).Select(i => new Lane(this, i)).ToArray();
+
+        /// <summary>
+        /// 進数指定
+        /// </summary>
+        public int Base { get; set; } = 36;
+
+        public static BmsModel Decode(string path)
         {
-        }
-
-        public int compareTo(BmsModel model)
-        {
-            return this.title.CompareTo(model.title);
-        }
-
-
-        public int GetTotalNotes()
-        {
-            return BMSModelUtils.getTotalNotes(this);
-        }
-
-        public EventLane getEventLane()
-        {
-            return new EventLane(this);
-        }
-
-        public Lane[] getLanes()
-        {
-            Lane[] lanes = new Lane[mode.key];
-            for (int i = 0; i < lanes.Length; i++)
+            if (path.EndsWith("bmson"))
             {
-                lanes[i] = new Lane(this, i);
+                return new BmsonDecoder().Decode(path);
             }
-            return lanes;
+            else
+            {
+                return new BmsDecoder().Decode(path);
+            }
         }
 
-        public String ToChartString()
+        public static BmsModel Decode(string path, byte[] bin)
         {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("JUDGERANK:" + JudgeRank + "\n");
-            sb.Append("TOTAL:" + Total + "\n");
-            if (LNMode != 0)
+            if (path.EndsWith("bmson"))
             {
-                sb.Append("LNMODE:" + (int)LNMode + "\n");
+                return new BmsonDecoder().Decode(path, bin);
             }
-            double nowbpm = -Double.MinValue;
-            StringBuilder tlsb = new StringBuilder();
-            foreach (TimeLine tl in Timelines)
+            else
             {
-                tlsb.Length = 0;
-                tlsb.Append(tl.getTime() + ":");
-                bool write = false;
-                if (nowbpm != tl.getBPM())
+                return new BmsDecoder().Decode(path, bin);
+            }
+        }
+
+        public int CompareTo(BmsModel model)
+        {
+            return Title.CompareTo(model.title);
+        }
+
+        public string ToChartString()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"JUDGERANK:{JudgeRank}\n");
+            sb.Append($"TOTAL:{Total}\n");
+            if (LNMode != LNMode.Undefined)
+                sb.Append($"LNMODE:{LNMode}\n");
+            var nowBpm = -double.MinValue;
+            var tlsb = new StringBuilder();
+            foreach (var tl in Timelines)
+            {
+                tlsb.Clear();
+                tlsb.Append($"{tl.getTime()}:");
+                var write = false;
+                if (nowBpm != tl.getBPM())
                 {
-                    nowbpm = tl.getBPM();
-                    tlsb.Append("B(" + nowbpm + ")");
+                    nowBpm = tl.getBPM();
+                    tlsb.Append($"B({nowBpm})");
                     write = true;
                 }
                 if (tl.getStop() != 0)
                 {
-                    tlsb.Append("S(" + tl.getStop() + ")");
+                    tlsb.Append($"S({tl.getStop()})");
                     write = true;
                 }
                 if (tl.getSectionLine())
@@ -292,27 +293,26 @@ namespace BmsParser
                 }
 
                 tlsb.Append('[');
-                for (int lane = 0; lane < mode.key; lane++)
+                for (var lane = 0; lane < mode.key; lane++)
                 {
-                    Note n = tl.getNote(lane);
+                    var n = tl.getNote(lane);
                     if (n is NormalNote)
                     {
                         tlsb.Append('1');
                         write = true;
                     }
-                    else if (n is LongNote)
+                    else if (n is LongNote ln)
                     {
-                        LongNote ln = (LongNote)n;
                         if (!ln.IsEnd)
                         {
-                            char[] lnchars = { 'l', 'L', 'C', 'H' };
+                            char[] lnchars = ['l', 'L', 'C', 'H'];
                             tlsb.Append(lnchars[(int)ln.Type] + ln.getMilliDuration());
                             write = true;
                         }
                     }
-                    else if (n is MineNote)
+                    else if (n is MineNote mine)
                     {
-                        tlsb.Append("m" + ((MineNote)n).getDamage());
+                        tlsb.Append("m" + mine.getDamage());
                         write = true;
                     }
                     else
@@ -334,22 +334,55 @@ namespace BmsParser
             return sb.ToString();
         }
 
-        public int getBase()
-        {
-            return @base;
-        }
+        public enum NoteType { All, Key, LongKey, Scratch, LongScratch, Mine }
+        public enum PlaySide { Both, P1, P2 }
 
-        public void setBase(int @base)
+        public int GetTotalNotes(NoteType type = NoteType.All, int start = 0, int end = int.MaxValue, PlaySide side = PlaySide.Both)
         {
-            if (@base == 62)
+            if (Mode.player == 1 && side == PlaySide.P2)
+                return 0;
+            var slane = new int[Mode.scratchKey.Length / (side == PlaySide.Both ? 1 : Mode.player)];
+            var sindex = 0;
+            for (var i = side == PlaySide.P2 ? slane.Length : 0; sindex < slane.Length; i++)
             {
-                this.@base = @base;
+                slane[sindex] = Mode.scratchKey[i];
+                sindex++;
             }
-            else
+            var nlane = new int[(Mode.key - Mode.scratchKey.Length) / (side == PlaySide.Both ? 1 : Mode.player)];
+            var nindex = 0;
+            for (var i = 0; nindex < nlane.Length; i++)
             {
-                this.@base = 36;
+                if (!Mode.isScratchKey(i))
+                {
+                    nlane[nindex] = i;
+                    nindex++;
+                }
             }
-            return;
+
+            return Timelines.Where(tl => start <= tl.getTime() && tl.getTime() < end)
+                .Sum(tl => type switch
+                {
+                    NoteType.All => tl.getTotalNotes(LNType),
+                    NoteType.Key => nlane.Count(lane => tl.existNote(lane) && tl.getNote(lane) is NormalNote),
+                    NoteType.LongKey => nlane
+                        .Count(lane => tl.existNote(lane) && tl.getNote(lane) is LongNote ln
+                            && (ln.Type == LNMode.LongNote
+                                || ln.Type == LNMode.ChargeNote
+                                || ln.Type == LNMode.HellChargeNote
+                                || ln.Type == LNMode.Undefined && LNType != LNType.LongNote
+                                || !ln.IsEnd)),
+                    NoteType.Scratch => slane.Count(lane => tl.existNote(lane) && tl.getNote(lane) is NormalNote),
+                    NoteType.LongScratch => slane
+                        .Count(lane => tl.existNote(lane) && tl.getNote(lane) is LongNote ln
+                            && (ln.Type == LNMode.LongNote
+                                || ln.Type == LNMode.ChargeNote
+                                || ln.Type == LNMode.HellChargeNote
+                                || ln.Type == LNMode.Undefined && LNType != LNType.LongNote
+                                || !ln.IsEnd)),
+                    NoteType.Mine => nlane.Count(lane => tl.existNote(lane) && tl.getNote(lane) is MineNote)
+                        + slane.Count(lane => tl.existNote(lane) && tl.getNote(lane) is MineNote),
+                    _ => 0
+                });
         }
     }
 }

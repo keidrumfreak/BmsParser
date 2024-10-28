@@ -39,7 +39,7 @@ namespace BmsParser
          */
         public BmsModel Decode(string path)
         {
-            return decode(new ChartInformation(path, lntype, null));
+            return Decode(new ChartInformation(path, lntype, null));
         }
 
         /**
@@ -52,7 +52,7 @@ namespace BmsParser
             return log.ToArray();
         }
 
-        public abstract BmsModel decode(ChartInformation info);
+        public abstract BmsModel Decode(ChartInformation info);
 
         /**
          * パスで指定したファイルに対応するChartDecoderを取得する

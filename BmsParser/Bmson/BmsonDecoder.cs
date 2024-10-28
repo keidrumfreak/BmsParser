@@ -17,23 +17,24 @@ namespace BmsParser
 {
     class BmsonDecoder : ChartDecoder
     {
-        //private ObjectMapper mapper = new ObjectMapper();
-
         private BmsModel model;
 
         private SortedDictionary<int, TimeLineCache> tlcache = new SortedDictionary<int, TimeLineCache>();
 
-        public BmsonDecoder() : this(LNType.LongNote) { }
-
-        public BmsonDecoder(LNType lntype)
+        public BmsonDecoder(LNType lnType = LNType.LongNote)
         {
-            this.lntype = lntype;
+            this.lntype = lnType;
         }
 
-        public override BmsModel decode(ChartInformation Info)
+        new public BmsModel Decode(string path)
         {
-            this.lntype = Info.LNType;
-            return decode(Info.Path);
+            return Decode(path, File.ReadAllBytes(path));
+        }
+
+        public override BmsModel Decode(ChartInformation info)
+        {
+            this.lntype = info.LNType;
+            return decode(info.Path);
         }
 
         protected BmsModel decode(string f)
@@ -41,7 +42,7 @@ namespace BmsParser
             //Logger.getGlobal().fine("BMSファイル解析開始 :" + f);
             try
             {
-                BmsModel model = this.decode(f, File.ReadAllBytes(f));
+                BmsModel model = this.Decode(f, File.ReadAllBytes(f));
                 if (model == null)
                 {
                     return null;
@@ -57,7 +58,7 @@ namespace BmsParser
             return null;
         }
 
-        public BmsModel decode(string f, byte[] data)
+        public BmsModel Decode(string path, byte[] bin)
         {
             //Logger.getGlobal().fine("BMSONファイル解析開始 :" + f.ToString());
             log.Clear();
@@ -68,7 +69,7 @@ namespace BmsParser
             Bmson bmson = null;
             try
             {
-                using var mem = new MemoryStream(data);
+                using var mem = new MemoryStream(bin);
                 using var reader = new StreamReader(mem);
                 var input = reader.ReadToEnd();
                 //MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -76,7 +77,7 @@ namespace BmsParser
                 //        Bmson.class);
                 bmson = JsonSerializer.Deserialize<Bmson>(input);
                 var sha256 = SHA256.Create();
-                var arr = sha256.ComputeHash(data);
+                var arr = sha256.ComputeHash(bin);
                 model.Sha256 = BitConverter.ToString(arr).ToLower().Replace("-", "");
                 //model.setSHA256(BMSDecoder.convertHexString(digest.digest()));
             }
@@ -585,8 +586,8 @@ namespace BmsParser
             //Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.ToString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
             //        + (System.currentTimeMillis() - currnttime));
 
-            model.ChartInformation = new ChartInformation(f, lntype, null);
-            printLog(f);
+            model.ChartInformation = new ChartInformation(path, lntype, null);
+            printLog(path);
             return model;
         }
 

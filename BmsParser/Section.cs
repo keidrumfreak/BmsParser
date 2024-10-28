@@ -61,7 +61,7 @@ namespace BmsParser
         {
             this.model = model;
             this.log = log;
-            int @base = model.getBase();
+            int @base = model.Base;
 
             channellines = new List<String>(lines.Count);
             if (prev != null)
@@ -224,7 +224,7 @@ namespace BmsParser
 
         private int[] splitData(String line)
         {
-            int @base = model.getBase();
+            int @base = model.Base;
             int findex = line.IndexOf(":") + 1;
             int lindex = line.Length;
             int split = (lindex - findex) / 2;
@@ -250,7 +250,7 @@ namespace BmsParser
 
         private void processData(String line, Action<double, int> processor)
         {
-            int @base = model.getBase();
+            int @base = model.Base;
             int findex = line.IndexOf(":") + 1;
             int lindex = line.Length;
             int split = (lindex - findex) / 2;
@@ -296,7 +296,7 @@ namespace BmsParser
             this.tlcache = tlcache;
             int[] cassign = model.Mode == Mode.POPN_9K ? CHANNELASSIGN_POPN :
                (model.Mode == Mode.BEAT_7K || model.Mode == Mode.BEAT_14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
-            int @base = model.getBase();
+            int @base = model.Base;
             // 小節線追加
             TimeLine basetl = getTimeLine(sectionnum);
             basetl.setSectionLine(true);

@@ -18,14 +18,36 @@ namespace BmsParser
         List<String> bgalist = new List<String>(62 * 62);
         private int[] bm = new int[62 * 62];
 
-        public BmsDecoder() : this(LNType.LongNote)
+        public BmsDecoder(LNType lnType = LNType.LongNote)
         {
+            lntype = lnType;
         }
 
-        public BmsDecoder(LNType lntype)
+        new public BmsModel Decode(string path)
         {
-            this.lntype = lntype;
-            // 予約語の登録
+            var model = decode(path, File.ReadAllBytes(path), path.EndsWith(".pms"), null);
+            return model;
+        }
+
+        public BmsModel Decode(string path, byte[] bin)
+        {
+            var model = decode(path, bin, path.EndsWith(".pms"), null);
+            return model;
+        }
+
+        public override BmsModel Decode(ChartInformation info)
+        {
+            try
+            {
+                this.lntype = info.LNType;
+                return decode(info.Path, File.ReadAllBytes(info.Path), info.Path.ToString().ToLower().EndsWith(".pms"), info.SelectedRandoms);
+            }
+            catch (IOException e)
+            {
+                log.Add(new DecodeLog(DecodeLog.State.ERROR, "BMSファイルが見つかりません"));
+                //Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
+            }
+            return null;
         }
 
         protected BmsModel decode(string f)
@@ -40,21 +62,6 @@ namespace BmsParser
                 }
                 //Logger.getGlobal().fine("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().Length);
                 return model;
-            }
-            catch (IOException e)
-            {
-                log.Add(new DecodeLog(DecodeLog.State.ERROR, "BMSファイルが見つかりません"));
-                //Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
-            }
-            return null;
-        }
-
-        public override BmsModel decode(ChartInformation info)
-        {
-            try
-            {
-                this.lntype = info.LNType;
-                return decode(info.Path, File.ReadAllBytes(info.Path), info.Path.ToString().ToLower().EndsWith(".pms"), info.SelectedRandoms);
             }
             catch (IOException e)
             {
@@ -222,7 +229,7 @@ namespace BmsParser
                         else if (skip.Count == 0 || skip.Last == null)
                         {
                             char c = line[1];
-                            int @base = model.getBase();
+                            int @base = model.Base;
                             if ('0' <= c && c <= '9' && line.Count() > 6)
                             {
                                 // line = line.toUpperCase();
@@ -763,7 +770,7 @@ namespace BmsParser
         {
             try
             {
-                if (model.getBase() == 62)
+                if (model.Base == 62)
                 {
                     model.LNObj = ChartDecoder.parseInt62(arg, 0);
                 }
@@ -826,7 +833,7 @@ namespace BmsParser
                 {
                     return new DecodeLog(WARNING, "#BASEに無効な数字が定義されています");
                 }
-                model.setBase(@base);
+                model.Base = @base;
             }
             catch (FormatException e)
             {
