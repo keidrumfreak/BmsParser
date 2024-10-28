@@ -36,21 +36,23 @@ namespace BmsParser
         /// </summary>
         public LNMode Type { get; set; }
 
-        LongNote pair;
+        LongNote? pair;
         /// <summary>
         /// ペアになっているロングノート
         /// </summary>
-        public LongNote Pair
+        public LongNote? Pair
         {
             get { return pair; }
             set
             {
-                value.pair = this;
                 pair = value;
+                if (pair == null)
+                    return;
 
+                pair.pair = this;
                 pair.IsEnd = pair.Section > Section;
                 IsEnd = !pair.IsEnd;
-                Type = (Type != LNMode.Undefined ? Type : pair.Type);
+                Type = Type != LNMode.Undefined ? Type : pair.Type;
                 pair.Type = Type;
             }
         }

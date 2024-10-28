@@ -311,7 +311,7 @@ namespace BmsParser
                     }
                     else if (n is MineNote mine)
                     {
-                        tlsb.Append("m" + mine.getDamage());
+                        tlsb.Append("m" + mine.Damage);
                         write = true;
                     }
                     else
