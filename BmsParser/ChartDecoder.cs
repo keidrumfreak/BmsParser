@@ -18,7 +18,7 @@ namespace BmsParser
     {
         protected LNType LNType { get; set; }
 
-        protected List<DecodeLog> log = [];
+        protected List<DecodeLog> logs = [];
 
         /**
          * パスで指定したファイルをBMSModelに変換する
@@ -51,7 +51,7 @@ namespace BmsParser
          */
         public DecodeLog[] GetDecodeLog()
         {
-            return [.. log];
+            return [.. logs];
         }
 
         public abstract BmsModel? Decode(ChartInformation info);
