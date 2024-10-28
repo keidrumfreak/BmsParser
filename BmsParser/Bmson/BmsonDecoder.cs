@@ -347,7 +347,7 @@ namespace BmsParser
                                     bool existNote = false;
                                     foreach (TimeLineCache tl2 in tlcache.Where(k => n.Y < k.Key && k.Key <= (n.Y + n.L)).Select(t => t.Value))
                                     {
-                                        if (tl2.timeline.ExistNote(key))
+                                        if (tl2.Timeline.ExistNote(key))
                                         {
                                             existNote = true;
                                             break;
@@ -576,7 +576,7 @@ namespace BmsParser
                 }
                 model.BgaList = bgamap;
             }
-            model.Timelines = tlcache.Values.Select(tlc => tlc.timeline).ToArray();
+            model.Timelines = tlcache.Values.Select(tlc => tlc.Timeline).ToArray();
 
             //Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.ToString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
             //        + (System.currentTimeMillis() - currnttime));
@@ -590,11 +590,11 @@ namespace BmsParser
         {
             // Timeをus単位にする場合はこのメソッド内部だけ変更すればOK
             if (tlcache.TryGetValue(y, out var tlc))
-                return tlc.timeline;
+                return tlc.Timeline;
 
             var le = tlcache.LastOrDefault(c => c.Key < y);
-            double bpm = le.Value.timeline.Bpm;
-            double time = le.Value.time + le.Value.timeline.MicroStop
+            double bpm = le.Value.Timeline.Bpm;
+            double time = le.Value.Time + le.Value.Timeline.MicroStop
                     + (240000.0 * 1000 * ((y - le.Key) / resolution)) / bpm;
 
             Timeline tl = new Timeline(y / resolution, (long)time, model.Mode.Key);

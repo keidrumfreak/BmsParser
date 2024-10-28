@@ -421,7 +421,7 @@ namespace BmsParser
                                     {
                                         continue;
                                     }
-                                    Timeline tl2 = e.Value.timeline;
+                                    Timeline tl2 = e.Value.Timeline;
                                     if (tl2.ExistNote(key))
                                     {
                                         Note note = tl2.GetNote(key);
@@ -533,7 +533,7 @@ namespace BmsParser
                                             continue;
                                         }
 
-                                        Timeline tl2 = e.Value.timeline;
+                                        Timeline tl2 = e.Value.Timeline;
                                         if (tl2.Section == startln[(int)key].Section)
                                         {
                                             Note note = startln[key];
@@ -578,7 +578,7 @@ namespace BmsParser
                                 {
                                     if (startln[(int)key].Section != double.MinValue)
                                     {
-                                        tlcache[startln[(int)key].Section].timeline.SetNote(key, null);
+                                        tlcache[startln[(int)key].Section].Timeline.SetNote(key, null);
                                     }
                                     startln[key] = null;
                                     log.Add(new DecodeLog(State.Warning, "LN内にLN終端ノートを定義しようとしています : "
@@ -649,12 +649,12 @@ namespace BmsParser
         private Timeline getTimeLine(double section)
         {
             if (tlcache.TryGetValue(section, out var tlc))
-                return tlc.timeline;
+                return tlc.Timeline;
 
             var le = tlcache.LastOrDefault(c => c.Key < section);
-            double scroll = le.Value.timeline.Scroll;
-            double bpm = le.Value.timeline.Bpm;
-            double time = le.Value.time + le.Value.timeline.MicroStop + (240000.0 * 1000 * (section - le.Key)) / bpm;
+            double scroll = le.Value.Timeline.Scroll;
+            double bpm = le.Value.Timeline.Bpm;
+            double time = le.Value.Time + le.Value.Timeline.MicroStop + (240000.0 * 1000 * (section - le.Key)) / bpm;
 
             Timeline tl = new Timeline(section, (long)time, model.Mode.Key);
             tl.Bpm = bpm;

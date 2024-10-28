@@ -224,18 +224,5 @@ namespace BmsParser
                 }
             });
         }
-
-        public class TimeLineCache
-        {
-
-            public double time;
-            public Timeline timeline;
-
-            public TimeLineCache(double time, Timeline timeline)
-            {
-                this.time = time;
-                this.timeline = timeline;
-            }
-        }
     }
 }

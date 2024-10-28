@@ -478,7 +478,7 @@ namespace BmsParser
                 int tlcount = 0;
                 foreach (TimeLineCache tlc in timelines.Values)
                 {
-                    tl[tlcount] = tlc.timeline;
+                    tl[tlcount] = tlc.Timeline;
                     tlcount++;
                 }
                 model.Timelines = tl;
@@ -497,7 +497,7 @@ namespace BmsParser
                         log.Add(new DecodeLog(State.Warning, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
                         if (lnendstatus[i].Section != Double.MinValue)
                         {
-                            timelines[lnendstatus[i].Section].timeline.SetNote(i, null);
+                            timelines[lnendstatus[i].Section].Timeline.SetNote(i, null);
                         }
                     }
                 }

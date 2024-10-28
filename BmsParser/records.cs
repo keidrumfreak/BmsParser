@@ -16,7 +16,7 @@ namespace BmsParser
 
     public record Event(EventType Type, int Interval);
 
-    //public record TimeLineCache(double Time, TimeLine TimeLine);
+    public record TimeLineCache(double Time, Timeline Timeline);
 
     public record Layer(Event Event, Sequence[][] Sequence);
 
