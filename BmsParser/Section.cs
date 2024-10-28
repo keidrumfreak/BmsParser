@@ -292,7 +292,7 @@ namespace BmsParser
         public void makeTimeLines(int[] wavmap, int[] bgamap, SortedDictionary<Double, TimeLineCache> tlcache, List<LongNote>[] lnlist, LongNote[] startln)
         {
             int lnobj = model.LNObj;
-            int lnmode = model.getLnmode();
+            var lnmode = model.LNMode;
             this.tlcache = tlcache;
             int[] cassign = model.Mode == Mode.POPN_9K ? CHANNELASSIGN_POPN :
                (model.Mode == Mode.BEAT_7K || model.Mode == Mode.BEAT_14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
@@ -430,11 +430,11 @@ namespace BmsParser
                                         {
                                             // LNOBJの直前のノートをLNに差し替える
                                             LongNote ln = new LongNote(note.getWav());
-                                            ln.setType(lnmode);
+                                            ln.Type = lnmode;
                                             tl2.setNote(key, ln);
                                             LongNote lnend = new LongNote(-2);
                                             tl.setNote(key, lnend);
-                                            ln.setPair(lnend);
+                                            ln.Pair = lnend;
 
                                             if (lnlist[key] == null)
                                             {
@@ -443,14 +443,14 @@ namespace BmsParser
                                             lnlist[key].Add(ln);
                                             break;
                                         }
-                                        else if (note is LongNote && ((LongNote)note).getPair() == null)
+                                        else if (note is LongNote && ((LongNote)note).Pair == null)
                                         {
                                             log.Add(new DecodeLog(WARNING,
                                                     "LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
                                                             + tl2.getSection() + " - " + tl.getSection()));
                                             LongNote lnend = new LongNote(-2);
                                             tl.setNote(key, lnend);
-                                            ((LongNote)note).setPair(lnend);
+                                            ((LongNote)note).Pair = lnend;
 
                                             if (lnlist[key] == null)
                                             {
@@ -493,7 +493,7 @@ namespace BmsParser
                                 double section = tl.getSection();
                                 foreach (LongNote ln in lnlist[key])
                                 {
-                                    if (ln.getSection() <= section && section <= ln.getPair().getSection())
+                                    if (ln.getSection() <= section && section <= ln.Pair.getSection())
                                     {
                                         insideln = true;
                                         break;
@@ -538,10 +538,10 @@ namespace BmsParser
                                         if (tl2.getSection() == startln[key].getSection())
                                         {
                                             Note note = startln[key];
-                                            ((LongNote)note).setType(lnmode);
+                                            ((LongNote)note).Type = lnmode;
                                             LongNote noteend = new LongNote(startln[key].getWav() != wavmap[data] ? wavmap[data] : -2);
                                             tl.setNote(key, noteend);
-                                            ((LongNote)note).setPair(noteend);
+                                            ((LongNote)note).Pair = noteend;
                                             if (lnlist[key] == null)
                                             {
                                                 lnlist[key] = new List<LongNote>();
@@ -600,7 +600,7 @@ namespace BmsParser
                                 double section = tl.getSection();
                                 foreach (LongNote ln in lnlist[key])
                                 {
-                                    if (ln.getSection() <= section && section <= ln.getPair().getSection())
+                                    if (ln.getSection() <= section && section <= ln.Pair.getSection())
                                     {
                                         insideln = true;
                                         break;

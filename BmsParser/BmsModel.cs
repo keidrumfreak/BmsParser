@@ -201,7 +201,7 @@ namespace BmsParser
 
         public bool ContainsUndefinedLongNote => Timelines
             .Any(t => Enumerable.Range(0, Mode.key)
-                .Any(i => t.getNote(i) != null && t.getNote(i) is LongNote ln && ln.getType() == LongNote.TYPE_UNDEFINED));
+                .Any(i => t.getNote(i) != null && t.getNote(i) is LongNote ln && ln.Type == LNMode.Undefined));
 
         public bool ContainsLongNote => Timelines
             .Any(tl => Enumerable.Range(0, Mode.key)
@@ -212,6 +212,8 @@ namespace BmsParser
                 .Any(i => tl.getNote(i) is MineNote));
 
         public string Preview { get; set; }
+
+        public LNMode LNMode { get; set; } = LNMode.Undefined;
 
         public JudgeRankType JudgeRankType { get; set; } = JudgeRankType.BmsRank;
 
@@ -225,8 +227,6 @@ namespace BmsParser
          * 進数指定
          */
         private int @base = 36;
-
-        private int lnmode = LongNote.TYPE_UNDEFINED;
 
         public BmsModel()
         {
@@ -258,24 +258,14 @@ namespace BmsParser
             return lanes;
         }
 
-        public int getLnmode()
-        {
-            return lnmode;
-        }
-
-        public void setLnmode(int lnmode)
-        {
-            this.lnmode = lnmode;
-        }
-
         public String ToChartString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("JUDGERANK:" + JudgeRank + "\n");
             sb.Append("TOTAL:" + Total + "\n");
-            if (lnmode != 0)
+            if (LNMode != 0)
             {
-                sb.Append("LNMODE:" + lnmode + "\n");
+                sb.Append("LNMODE:" + (int)LNMode + "\n");
             }
             double nowbpm = -Double.MinValue;
             StringBuilder tlsb = new StringBuilder();
@@ -313,10 +303,10 @@ namespace BmsParser
                     else if (n is LongNote)
                     {
                         LongNote ln = (LongNote)n;
-                        if (!ln.isEnd())
+                        if (!ln.IsEnd)
                         {
                             char[] lnchars = { 'l', 'L', 'C', 'H' };
-                            tlsb.Append(lnchars[ln.getType()] + ln.getMilliDuration());
+                            tlsb.Append(lnchars[(int)ln.Type] + ln.getMilliDuration());
                             write = true;
                         }
                     }

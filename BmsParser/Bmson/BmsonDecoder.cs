@@ -140,7 +140,7 @@ namespace BmsParser
             }
             if (bmson.Info.LNType > 0 && bmson.Info.LNType <= 3)
             {
-                model.setLnmode(bmson.Info.LNType);
+                model.LNMode = (LNMode)bmson.Info.LNType;
             }
             int[] keyassign;
             if (model.Mode == BEAT_5K)
@@ -288,11 +288,11 @@ namespace BmsParser
                             double section = (n.Y / resolution);
                             foreach (LongNote ln in lnlist[key])
                             {
-                                if (section == ln.getPair().getSection())
+                                if (section == ln.Pair.getSection())
                                 {
-                                    ln.getPair().setWav(id);
-                                    ln.getPair().setMicroStarttime(starttime);
-                                    ln.getPair().setMicroDuration(duration);
+                                    ln.Pair.setWav(id);
+                                    ln.Pair.setMicroStarttime(starttime);
+                                    ln.Pair.setMicroDuration(duration);
                                     assigned = true;
                                     break;
                                 }
@@ -311,7 +311,7 @@ namespace BmsParser
                             double section = (n.Y / resolution);
                             foreach (LongNote ln in lnlist[key])
                             {
-                                if (ln.getSection() < section && section <= ln.getPair().getSection())
+                                if (ln.getSection() < section && section <= ln.Pair.getSection())
                                 {
                                     insideln = true;
                                     break;
@@ -336,7 +336,7 @@ namespace BmsParser
                                 {
                                     // レイヤーノート判定
                                     var en = tl.getNote(key);
-                                    if (en is LongNote && end.getNote(key) == ((LongNote)en).getPair())
+                                    if (en is LongNote && end.getNote(key) == ((LongNote)en).Pair)
                                     {
                                         en.addLayeredNote(ln);
                                     }
@@ -383,8 +383,8 @@ namespace BmsParser
                                         }
 
                                         end.setNote(key, lnend);
-                                        ln.setType(n.T > 0 && n.T <= 3 ? n.T : model.getLnmode());
-                                        ln.setPair(lnend);
+                                        ln.Type = n.T > 0 && n.T <= 3 ? (LNMode)n.T : model.LNMode;
+                                        ln.Pair = lnend;
                                         if (lnlist[key] == null)
                                         {
                                             lnlist[key] = new List<LongNote>();
@@ -458,7 +458,7 @@ namespace BmsParser
                             double section = (n.Y / resolution);
                             foreach (LongNote ln in lnlist[key])
                             {
-                                if (ln.getSection() < section && section <= ln.getPair().getSection())
+                                if (ln.getSection() < section && section <= ln.Pair.getSection())
                                 {
                                     insideln = true;
                                     break;

@@ -431,7 +431,7 @@ namespace BmsParser
                         int index = line.IndexOf(' ');
                         if (index > 0 && line.Length > index + 1)
                         {
-                            model.getValues().put(line.Substring(1, index), line.Substring(index + 1));
+                            model.Values.put(line.Substring(1, index), line.Substring(index + 1));
                         }
                     }
                     else if (line[0] == '@')
@@ -439,7 +439,7 @@ namespace BmsParser
                         int index = line.IndexOf(' ');
                         if (index > 0 && line.Length > index + 1)
                         {
-                            model.getValues().put(line.Substring(1, index), line.Substring(index + 1));
+                            model.Values.put(line.Substring(1, index), line.Substring(index + 1));
                         }
                     }
                 }
@@ -787,7 +787,7 @@ namespace BmsParser
                 {
                     return new DecodeLog(WARNING, "#LNMODEに無効な数字が定義されています");
                 }
-                model.setLnmode(lnmode);
+                model.LNMode = (LNMode)lnmode;
             }
             catch (FormatException e)
             {

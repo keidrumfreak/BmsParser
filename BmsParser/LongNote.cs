@@ -3,46 +3,63 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BmsParser
 {
+    /// <summary>
+    /// ロングノートの種類
+    /// </summary>
+    public enum LNMode
+    {
+        /// <summary>
+        /// 未定義
+        /// </summary>
+        Undefined = 0,
+        /// <summary>
+        /// ロングノート
+        /// </summary>
+        LongNote = 1,
+        /// <summary>
+        /// チャージノート
+        /// </summary>
+        ChargeNote = 2,
+        /// <summary>
+        /// ヘルチャージノート
+        /// </summary>
+        HellChargeNote = 3
+    }
+
     public class LongNote : Note
     {
-        /**
-             * ロングノート終端かどうか
-             */
-        private bool end;
-        /**
-         * ペアになっているロングノート
-         */
-        private LongNote pair;
-        /**
-         * ロングノートの種類
-         */
-        private int type;
+        /// <summary>
+        /// ロングノートの種類
+        /// </summary>
+        public LNMode Type { get; set; }
 
-        /**
-         * ロングノートの種類:未定義
-         */
-        public static readonly int TYPE_UNDEFINED = 0;
-        /**
-         * ロングノートの種類:ロングノート
-         */
-        public static readonly int TYPE_LONGNOTE = 1;
-        /**
-         * ロングノートの種類:チャージノート
-         */
-        public static readonly int TYPE_CHARGENOTE = 2;
-        /**
-         * ロングノートの種類:ヘルチャージノート
-         */
-        public static readonly int TYPE_HELLCHARGENOTE = 3;
+        LongNote pair;
+        /// <summary>
+        /// ペアになっているロングノート
+        /// </summary>
+        public LongNote Pair
+        {
+            get { return pair; }
+            set
+            {
+                value.pair = this;
+                pair = value;
 
-        /**
-         * 指定のTimeLineを始点としたロングノートを作成する
-         * @param start
-         */
+                pair.IsEnd = pair.getSection() > getSection();
+                IsEnd = !pair.IsEnd;
+                Type = (Type != LNMode.Undefined ? Type : pair.Type);
+                pair.Type = Type;
+            }
+        }
+
+        /// <summary>
+        /// 終端かどうか
+        /// </summary>
+        public bool IsEnd { get; private set; }
+
         public LongNote(int wav)
         {
             this.setWav(wav);
@@ -53,36 +70,6 @@ namespace BmsParser
             this.setWav(wav);
             this.setMicroStarttime(starttime);
             this.setMicroDuration(duration);
-        }
-
-        public int getType()
-        {
-            return type;
-        }
-
-        public void setType(int type)
-        {
-            this.type = type;
-        }
-
-        public void setPair(LongNote pair)
-        {
-            pair.pair = this;
-            this.pair = pair;
-
-            pair.end = pair.getSection() > this.getSection();
-            this.end = !pair.end;
-            type = pair.type = (type != TYPE_UNDEFINED ? type : pair.type);
-        }
-
-        public LongNote getPair()
-        {
-            return pair;
-        }
-
-        public bool isEnd()
-        {
-            return end;
         }
     }
 }

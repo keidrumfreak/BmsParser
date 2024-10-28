@@ -123,10 +123,10 @@ namespace BmsParser
                                 if (tl.existNote(lane) && (tl.getNote(lane) is LongNote))
                                 {
                                     LongNote ln = (LongNote)tl.getNote(lane);
-                                    if (ln.getType() == LongNote.TYPE_CHARGENOTE
-                                            || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
-                                            || (ln.getType() == LongNote.TYPE_UNDEFINED && model.LNType != LNType.LongNote)
-                                            || !ln.isEnd())
+                                    if (ln.Type == LNMode.ChargeNote
+                                            || ln.Type == LNMode.HellChargeNote
+                                            || (ln.Type == LNMode.Undefined && model.LNType != LNType.LongNote)
+                                            || !ln.IsEnd)
                                     {
                                         count++;
                                     }
@@ -151,10 +151,10 @@ namespace BmsParser
                                 if (n is LongNote)
                                 {
                                     LongNote ln = (LongNote)n;
-                                    if (ln.getType() == LongNote.TYPE_CHARGENOTE
-                                            || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
-                                            || (ln.getType() == LongNote.TYPE_UNDEFINED && model.LNType != LNType.LongNote)
-                                            || !ln.isEnd())
+                                    if (ln.Type == LNMode.ChargeNote
+                                            || ln.Type == LNMode.HellChargeNote
+                                            || (ln.Type == LNMode.Undefined && model.LNType != LNType.LongNote)
+                                            || !ln.IsEnd)
                                     {
                                         count++;
                                     }

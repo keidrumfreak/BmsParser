@@ -159,9 +159,9 @@ namespace BmsParser
                     if (note is LongNote)
                     {
                         LongNote ln = (LongNote)note;
-                        if (ln.getType() == LongNote.TYPE_CHARGENOTE || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
-                                || (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNType.LongNote)
-                                || !ln.isEnd())
+                        if (ln.Type == LNMode.ChargeNote || ln.Type == LNMode.HellChargeNote
+                                || (ln.Type == LNMode.Undefined && lntype != LNType.LongNote)
+                                || !ln.IsEnd)
                         {
                             count++;
                         }
