@@ -77,7 +77,7 @@ namespace BmsParser
          */
         public static int getTotalNotes(BmsModel model, int start, int end, int type, int side)
         {
-            Mode mode = model.getMode();
+            Mode mode = model.Mode;
             if (mode.player == 1 && side == 2)
             {
                 return 0;
@@ -99,14 +99,14 @@ namespace BmsParser
             }
 
             int count = 0;
-            foreach (TimeLine tl in model.getAllTimeLines())
+            foreach (TimeLine tl in model.Timelines)
             {
                 if (tl.getTime() >= start && tl.getTime() < end)
                 {
                     switch (type)
                     {
                         case TOTALNOTES_ALL:
-                            count += tl.getTotalNotes(model.getLntype());
+                            count += tl.getTotalNotes(model.LNType);
                             break;
                         case TOTALNOTES_KEY:
                             foreach (int lane in nlane)
@@ -125,7 +125,7 @@ namespace BmsParser
                                     LongNote ln = (LongNote)tl.getNote(lane);
                                     if (ln.getType() == LongNote.TYPE_CHARGENOTE
                                             || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
-                                            || (ln.getType() == LongNote.TYPE_UNDEFINED && model.getLntype() != BmsModel.LNTYPE_LONGNOTE)
+                                            || (ln.getType() == LongNote.TYPE_UNDEFINED && model.LNType != LNType.LongNote)
                                             || !ln.isEnd())
                                     {
                                         count++;
@@ -153,7 +153,7 @@ namespace BmsParser
                                     LongNote ln = (LongNote)n;
                                     if (ln.getType() == LongNote.TYPE_CHARGENOTE
                                             || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
-                                            || (ln.getType() == LongNote.TYPE_UNDEFINED && model.getLntype() != BmsModel.LNTYPE_LONGNOTE)
+                                            || (ln.getType() == LongNote.TYPE_UNDEFINED && model.LNType != LNType.LongNote)
                                             || !ln.isEnd())
                                     {
                                         count++;
@@ -191,8 +191,8 @@ namespace BmsParser
 
         public static void changeFrequency(BmsModel model, float freq)
         {
-            model.setBpm(model.getBpm() * freq);
-            foreach (TimeLine tl in model.getAllTimeLines())
+            model.Bpm = model.Bpm * freq;
+            foreach (TimeLine tl in model.Timelines)
             {
                 tl.setBPM(tl.getBPM() * freq);
                 tl.setStop((long)(tl.getMicroStop() / freq));
@@ -203,13 +203,13 @@ namespace BmsParser
         public static double getMaxNotesPerTime(BmsModel model, int range)
         {
             int maxnotes = 0;
-            TimeLine[] tl = model.getAllTimeLines();
+            TimeLine[] tl = model.Timelines;
             for (int i = 0; i < tl.Length; i++)
             {
                 int notes = 0;
                 for (int j = i; j < tl.Length && tl[j].getTime() < tl[i].getTime() + range; j++)
                 {
-                    notes += tl[j].getTotalNotes(model.getLntype());
+                    notes += tl[j].getTotalNotes(model.LNType);
                 }
                 maxnotes = (maxnotes < notes) ? notes : maxnotes;
             }
@@ -219,7 +219,7 @@ namespace BmsParser
         public static long setStartNoteTime(BmsModel model, long starttime)
         {
             long marginTime = 0;
-            foreach (TimeLine tl in model.getAllTimeLines())
+            foreach (TimeLine tl in model.Timelines)
             {
                 if (tl.getMilliTime() >= starttime)
                 {
@@ -234,21 +234,21 @@ namespace BmsParser
 
             if (marginTime > 0)
             {
-                double marginSection = marginTime * model.getAllTimeLines()[0].getBPM() / 240000;
-                foreach (TimeLine tl in model.getAllTimeLines())
+                double marginSection = marginTime * model.Timelines[0].getBPM() / 240000;
+                foreach (TimeLine tl in model.Timelines)
                 {
                     tl.setSection(tl.getSection() + marginSection);
                     tl.setMicroTime(tl.getMicroTime() + marginTime * 1000);
                 }
 
-                TimeLine[] tl2 = new TimeLine[model.getAllTimeLines().Length + 1];
-                tl2[0] = new TimeLine(0, 0, model.getMode().key);
-                tl2[0].setBPM(model.getBpm());
+                TimeLine[] tl2 = new TimeLine[model.Timelines.Length + 1];
+                tl2[0] = new TimeLine(0, 0, model.Mode.key);
+                tl2[0].setBPM(model.Bpm);
                 for (int i = 1; i < tl2.Length; i++)
                 {
-                    tl2[i] = model.getAllTimeLines()[i - 1];
+                    tl2[i] = model.Timelines[i - 1];
                 }
-                model.setAllTimeLine(tl2);
+                model.Timelines = tl2;
             }
 
             return marginTime;

@@ -14,7 +14,7 @@ namespace BmsParser
     /// </summary>
     public abstract class ChartDecoder
     {
-        protected int lntype;
+        protected LNType lntype;
 
         protected List<DecodeLog> log = new List<DecodeLog>();
 
@@ -66,11 +66,11 @@ namespace BmsParser
             String s = Path.GetFileName(p).ToLower();
             if (s.EndsWith(".bms") || s.EndsWith(".bme") || s.EndsWith(".bml") || s.EndsWith(".pms"))
             {
-                return new BmsDecoder(BmsModel.LNTYPE_LONGNOTE);
+                return new BmsDecoder(LNType.LongNote);
             }
             else if (s.EndsWith(".bmson"))
             {
-                return new BmsonDecoder(BmsModel.LNTYPE_LONGNOTE);
+                return new BmsonDecoder(LNType.LongNote);
             }
             return null;
         }

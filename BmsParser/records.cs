@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BmsParser
 {
-    public record ChartInformation(string path, int lntype, int[] selectedRandoms);
+    public record ChartInformation(string Path, LNType LNType, int[] SelectedRandoms);
 
     //public enum State { Info, Warning, Error }
 

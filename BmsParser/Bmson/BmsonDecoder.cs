@@ -23,17 +23,17 @@ namespace BmsParser
 
         private SortedDictionary<int, TimeLineCache> tlcache = new SortedDictionary<int, TimeLineCache>();
 
-        public BmsonDecoder() : this(BmsModel.LNTYPE_LONGNOTE) { }
+        public BmsonDecoder() : this(LNType.LongNote) { }
 
-        public BmsonDecoder(int lntype)
+        public BmsonDecoder(LNType lntype)
         {
             this.lntype = lntype;
         }
 
         public override BmsModel decode(ChartInformation Info)
         {
-            this.lntype = Info.lntype;
-            return decode(Info.path);
+            this.lntype = Info.LNType;
+            return decode(Info.Path);
         }
 
         protected BmsModel decode(string f)
@@ -77,7 +77,7 @@ namespace BmsParser
                 bmson = JsonSerializer.Deserialize<Bmson>(input);
                 var sha256 = SHA256.Create();
                 var arr = sha256.ComputeHash(data);
-                model.setSHA256(BitConverter.ToString(arr).ToLower().Replace("-", ""));
+                model.Sha256 = BitConverter.ToString(arr).ToLower().Replace("-", "");
                 //model.setSHA256(BMSDecoder.convertHexString(digest.digest()));
             }
             catch (IOException e)
@@ -85,20 +85,20 @@ namespace BmsParser
                 //e.printStackTrace();
                 return null;
             }
-            model.setTitle(bmson.Info.Title);
-            model.setSubTitle((bmson.Info.Subtitle != null ? bmson.Info.Subtitle : "")
+            model.Title = bmson.Info.Title;
+            model.Subtitle = (bmson.Info.Subtitle != null ? bmson.Info.Subtitle : "")
             + (bmson.Info.Subtitle != null && bmson.Info.Subtitle.Length > 0 && bmson.Info.ChartName != null
             && bmson.Info.ChartName.Length > 0 ? " " : "")
                     + (bmson.Info.ChartName != null && bmson.Info.ChartName.Length > 0
-                            ? "[" + bmson.Info.ChartName + "]" : ""));
-            model.setArtist(bmson.Info.Artist);
+                            ? "[" + bmson.Info.ChartName + "]" : "");
+            model.Artist = bmson.Info.Artist;
             StringBuilder subartist = new StringBuilder();
             foreach (String s in bmson.Info.SubArtists)
             {
                 subartist.Append((subartist.Length > 0 ? "," : "") + s);
             }
-            model.setSubArtist(subartist.ToString());
-            model.setGenre(bmson.Info.Genre);
+            model.Subartist = subartist.ToString();
+            model.Genre = bmson.Info.Genre;
 
             if (bmson.Info.JudgeRank < 0)
             {
@@ -106,68 +106,68 @@ namespace BmsParser
             }
             else if (bmson.Info.JudgeRank < 5)
             {
-                model.setJudgerank((int)bmson.Info.JudgeRank);
+                model.JudgeRank = (int)bmson.Info.JudgeRank;
                 log.Add(new DecodeLog(WARNING, "judge_rankの定義が仕様通りでない可能性があります。judge_rank = " + bmson.Info.JudgeRank));
-                model.setJudgerankType(BmsModel.JudgeRankType.BMS_RANK);
+                model.JudgeRankType = JudgeRankType.BmsRank;
             }
             else
             {
-                model.setJudgerank((int)bmson.Info.JudgeRank);
-                model.setJudgerankType(BmsModel.JudgeRankType.BMSON_JUDGERANK);
+                model.JudgeRank = (int)bmson.Info.JudgeRank;
+                model.JudgeRankType = JudgeRankType.BmsonJudgeRank;
             }
 
             if (bmson.Info.Total > 0)
             {
-                model.setTotal(bmson.Info.Total);
-                model.setTotalType(BmsModel.TotalType.BMSON);
+                model.Total = bmson.Info.Total;
+                model.TotalType = TotalType.Bmson;
             }
             else
             {
                 log.Add(new DecodeLog(WARNING, "totalが0以下です。total = " + bmson.Info.Total));
             }
 
-            model.setBpm(bmson.Info.InitBpm);
-            model.setPlaylevel(bmson.Info.Level.ToString());
+            model.Bpm = bmson.Info.InitBpm;
+            model.PlayLevel = bmson.Info.Level.ToString();
             Mode mode = Mode.getMode(bmson.Info.ModeHint);
             if (mode != null)
             {
-                model.setMode(mode);
+                model.Mode = mode;
             }
             else
             {
                 log.Add(new DecodeLog(WARNING, "非対応のmode_hintです。mode_hint = " + bmson.Info.ModeHint));
-                model.setMode(Mode.BEAT_7K);
+                model.Mode = Mode.BEAT_7K;
             }
             if (bmson.Info.LNType > 0 && bmson.Info.LNType <= 3)
             {
                 model.setLnmode(bmson.Info.LNType);
             }
             int[] keyassign;
-            if (model.getMode() == BEAT_5K)
+            if (model.Mode == BEAT_5K)
             {
                 keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5 };
             }
-            else if (model.getMode() == BEAT_10K)
+            else if (model.Mode == BEAT_10K)
             {
                 keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5, 6, 7, 8, 9, 10, -1, -1, 11 };
             }
             else
             {
-                keyassign = new int[model.getMode().key];
+                keyassign = new int[model.Mode.key];
                 for (int i = 0; i < keyassign.Length; i++)
                 {
                     keyassign[i] = i;
                 }
             }
-            List<LongNote>[] lnlist = new List<LongNote>[model.getMode().key];
+            List<LongNote>[] lnlist = new List<LongNote>[model.Mode.key];
             Dictionary<BmsonNote, LongNote> lnup = new Dictionary<BmsonNote, LongNote>();
 
-            model.setBanner(bmson.Info.BannerImage);
-            model.setBackbmp(bmson.Info.BackImage);
-            model.setStagefile(bmson.Info.EyecatchImage);
-            model.setPreview(bmson.Info.PreviewMusic);
-            TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
-            basetl.setBPM(model.getBpm());
+            model.Banner = bmson.Info.BannerImage;
+            model.BackBmp = bmson.Info.BackImage;
+            model.StageFile = bmson.Info.EyecatchImage;
+            model.Preview = bmson.Info.PreviewMusic;
+            TimeLine basetl = new TimeLine(0, 0, model.Mode.key);
+            basetl.setBPM(model.Bpm);
             tlcache.put(0, new TimeLineCache(0.0, basetl));
 
             if (bmson.BpmEvents == null)
@@ -485,7 +485,7 @@ namespace BmsParser
                 id++;
             }
 
-            model.setWavList(wavmap);
+            model.WavList = wavmap;
             // BGA処理
             if (bmson.Bga != null && bmson.Bga.BgaHeader != null)
             {
@@ -578,14 +578,14 @@ namespace BmsParser
                         }
                     }
                 }
-                model.setBgaList(bgamap);
+                model.BgaList = bgamap;
             }
-            model.setAllTimeLine(tlcache.Values.Select(tlc => tlc.timeline).ToArray());
+            model.Timelines = tlcache.Values.Select(tlc => tlc.timeline).ToArray();
 
             //Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.ToString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
             //        + (System.currentTimeMillis() - currnttime));
 
-            model.setChartInformation(new ChartInformation(f, lntype, null));
+            model.ChartInformation = new ChartInformation(f, lntype, null);
             printLog(f);
             return model;
         }
@@ -601,7 +601,7 @@ namespace BmsParser
             double time = le.Value.time + le.Value.timeline.getMicroStop()
                     + (240000.0 * 1000 * ((y - le.Key) / resolution)) / bpm;
 
-            TimeLine tl = new TimeLine(y / resolution, (long)time, model.getMode().key);
+            TimeLine tl = new TimeLine(y / resolution, (long)time, model.Mode.key);
             tl.setBPM(bpm);
             tlcache.put(y, new TimeLineCache(time, tl));
             // System.out.println("y = " + y + " , bpm = " + bpm + " , time = " +

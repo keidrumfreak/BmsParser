@@ -141,7 +141,7 @@ namespace BmsParser
          */
         public int getTotalNotes()
         {
-            return getTotalNotes(BmsModel.LNTYPE_LONGNOTE);
+            return getTotalNotes(LNType.LongNote);
         }
 
         /**
@@ -149,7 +149,7 @@ namespace BmsParser
          * 
          * @return
          */
-        public int getTotalNotes(int lntype)
+        public int getTotalNotes(LNType lntype)
         {
             int count = 0;
             foreach (Note note in notes)
@@ -160,7 +160,7 @@ namespace BmsParser
                     {
                         LongNote ln = (LongNote)note;
                         if (ln.getType() == LongNote.TYPE_CHARGENOTE || ln.getType() == LongNote.TYPE_HELLCHARGENOTE
-                                || (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != BmsModel.LNTYPE_LONGNOTE)
+                                || (ln.getType() == LongNote.TYPE_UNDEFINED && lntype != LNType.LongNote)
                                 || !ln.isEnd())
                         {
                             count++;

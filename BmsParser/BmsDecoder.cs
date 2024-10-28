@@ -18,11 +18,11 @@ namespace BmsParser
         List<String> bgalist = new List<String>(62 * 62);
         private int[] bm = new int[62 * 62];
 
-        public BmsDecoder() : this(BmsModel.LNTYPE_LONGNOTE)
+        public BmsDecoder() : this(LNType.LongNote)
         {
         }
 
-        public BmsDecoder(int lntype)
+        public BmsDecoder(LNType lntype)
         {
             this.lntype = lntype;
             // 予約語の登録
@@ -53,8 +53,8 @@ namespace BmsParser
         {
             try
             {
-                this.lntype = info.lntype;
-                return decode(info.path, File.ReadAllBytes(info.path), info.path.ToString().ToLower().EndsWith(".pms"), info.selectedRandoms);
+                this.lntype = info.LNType;
+                return decode(info.Path, File.ReadAllBytes(info.Path), info.Path.ToString().ToLower().EndsWith(".pms"), info.SelectedRandoms);
             }
             catch (IOException e)
             {
@@ -124,7 +124,7 @@ namespace BmsParser
             {
                 using var mem = new MemoryStream(data);
                 using var br = new StreamReader(mem);
-                model.setMode(ispms ? Mode.POPN_9K : Mode.BEAT_5K);
+                model.Mode = ispms ? Mode.POPN_9K : Mode.BEAT_5K;
                 // Logger.getGlobal().info(
                 // "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
 
@@ -256,7 +256,7 @@ namespace BmsParser
                                         double bpm = Double.Parse(arg);
                                         if (bpm > 0)
                                         {
-                                            model.setBpm(bpm);
+                                            model.Bpm = bpm;
                                         }
                                         else
                                         {
@@ -444,8 +444,8 @@ namespace BmsParser
                     }
                 }
 
-                model.setWavList(wavlist.ToArray());
-                model.setBgaList(bgalist.ToArray());
+                model.WavList = wavlist.ToArray();
+                model.BgaList = bgalist.ToArray();
 
                 Section prev = null;
                 Section[] sections = new Section[maxsec + 1];
@@ -457,10 +457,10 @@ namespace BmsParser
                 }
 
                 SortedDictionary<Double, TimeLineCache> timelines = new SortedDictionary<Double, TimeLineCache>();
-                List<LongNote>[] lnlist = new List<LongNote>[model.getMode().key];
-                LongNote[] lnendstatus = new LongNote[model.getMode().key];
-                TimeLine basetl = new TimeLine(0, 0, model.getMode().key);
-                basetl.setBPM(model.getBpm());
+                List<LongNote>[] lnlist = new List<LongNote>[model.Mode.key];
+                LongNote[] lnendstatus = new LongNote[model.Mode.key];
+                TimeLine basetl = new TimeLine(0, 0, model.Mode.key);
+                basetl.setBPM(model.Bpm);
                 timelines.put(0.0, new TimeLineCache(0.0, basetl));
                 foreach (Section section in sections)
                 {
@@ -475,7 +475,7 @@ namespace BmsParser
                     tl[tlcount] = tlc.timeline;
                     tlcount++;
                 }
-                model.setAllTimeLine(tl);
+                model.Timelines = tl;
 
                 if (tl[0].getBPM() == 0)
                 {
@@ -496,31 +496,31 @@ namespace BmsParser
                     }
                 }
 
-                if (model.getTotalType() != BmsModel.TotalType.BMS)
+                if (model.TotalType != TotalType.Bms)
                 {
                     log.Add(new DecodeLog(WARNING, "TOTALが未定義です"));
                 }
-                if (model.getTotal() <= 60.0)
+                if (model.Total <= 60.0)
                 {
                     log.Add(new DecodeLog(WARNING, "TOTAL値が少なすぎます"));
                 }
                 if (tl.Length > 0)
                 {
-                    if (tl[tl.Length - 1].getTime() >= model.getLastTime() + 30000)
+                    if (tl[tl.Length - 1].getTime() >= model.LastTime + 30000)
                     {
                         log.Add(new DecodeLog(WARNING, "最後のノート定義から30秒以上の余白があります"));
                     }
                 }
-                if (model.getPlayer() > 1 && (model.getMode() == Mode.BEAT_5K || model.getMode() == Mode.BEAT_7K))
+                if (model.Player > 1 && (model.Mode == Mode.BEAT_5K || model.Mode == Mode.BEAT_7K))
                 {
                     log.Add(new DecodeLog(WARNING, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
                 }
-                if (model.getPlayer() == 1 && (model.getMode() == Mode.BEAT_10K || model.getMode() == Mode.BEAT_14K))
+                if (model.Player == 1 && (model.Mode == Mode.BEAT_10K || model.Mode == Mode.BEAT_14K))
                 {
                     log.Add(new DecodeLog(WARNING, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
                 }
-                model.setMD5(getMd5Hash(data));
-                model.setSHA256(getSha256Hash(data));
+                model.MD5 = getMd5Hash(data);
+                model.Sha256 = getSha256Hash(data);
                 log.Add(new DecodeLog(INFO, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
                 //Logger.getGlobal().fine("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
 
@@ -535,7 +535,7 @@ namespace BmsParser
                     }
                 }
 
-                model.setChartInformation(new ChartInformation(path, lntype, selectedRandom));
+                model.ChartInformation = new ChartInformation(path, lntype, selectedRandom);
                 printLog(path);
                 return model;
             }
@@ -626,7 +626,7 @@ namespace BmsParser
                 if (player >= 1 && player < 3)
                 {
 
-                    model.setPlayer(player);
+                    model.Player = player;
                 }
                 else
                 {
@@ -641,32 +641,32 @@ namespace BmsParser
         });
         public static readonly CommandWord GENRE = new CommandWord(nameof(GENRE), (model, arg) =>
         {
-            model.setGenre(arg);
+            model.Genre = arg;
             return null;
         });
         public static readonly CommandWord TITLE = new CommandWord(nameof(TITLE), (model, arg) =>
         {
-            model.setTitle(arg);
+            model.Title = arg;
             return null;
         });
         public static readonly CommandWord SUBTITLE = new CommandWord(nameof(SUBTITLE), (model, arg) =>
         {
-            model.setSubTitle(arg);
+            model.Subtitle = arg;
             return null;
         });
         public static readonly CommandWord ARTIST = new CommandWord(nameof(ARTIST), (model, arg) =>
         {
-            model.setArtist(arg);
+            model.Artist = arg;
             return null;
         });
         public static readonly CommandWord SUBARTIST = new CommandWord(nameof(SUBARTIST), (model, arg) =>
         {
-            model.setSubArtist(arg);
+            model.Subartist = arg;
             return null;
         });
         public static readonly CommandWord PLAYLEVEL = new CommandWord(nameof(PLAYLEVEL), (model, arg) =>
         {
-            model.setPlaylevel(arg);
+            model.PlayLevel = arg;
             return null;
         });
         public static readonly CommandWord RANK = new CommandWord(nameof(RANK), (model, arg) =>
@@ -676,8 +676,8 @@ namespace BmsParser
                 int rank = int.Parse(arg);
                 if (rank >= 0 && rank < 5)
                 {
-                    model.setJudgerank(rank);
-                    model.setJudgerankType(BmsModel.JudgeRankType.BMS_RANK);
+                    model.JudgeRank = rank;
+                    model.JudgeRankType = JudgeRankType.BmsRank;
                 }
                 else
                 {
@@ -697,8 +697,8 @@ namespace BmsParser
                 int rank = int.Parse(arg);
                 if (rank >= 1)
                 {
-                    model.setJudgerank(rank);
-                    model.setJudgerankType(BmsModel.JudgeRankType.BMS_DEFEXRANK);
+                    model.JudgeRank = rank;
+                    model.JudgeRankType = JudgeRankType.BmsDefEXRank;
                 }
                 else
                 {
@@ -718,8 +718,8 @@ namespace BmsParser
                 double total = Double.Parse(arg);
                 if (total > 0)
                 {
-                    model.setTotal(total);
-                    model.setTotalType(BmsModel.TotalType.BMS);
+                    model.Total = total;
+                    model.TotalType = TotalType.Bms;
                 }
                 else
                 {
@@ -736,7 +736,7 @@ namespace BmsParser
         {
             try
             {
-                model.setVolwav(int.Parse(arg));
+                model.VolWav = int.Parse(arg);
             }
             catch (FormatException e)
             {
@@ -746,17 +746,17 @@ namespace BmsParser
         });
         public static readonly CommandWord STAGEFILE = new CommandWord(nameof(STAGEFILE), (model, arg) =>
         {
-            model.setStagefile(arg.Replace('\\', '/'));
+            model.StageFile = arg.Replace('\\', '/');
             return null;
         });
         public static readonly CommandWord BACKBMP = new CommandWord(nameof(BACKBMP), (model, arg) =>
         {
-            model.setBackbmp(arg.Replace('\\', '/'));
+            model.BackBmp = arg.Replace('\\', '/');
             return null;
         });
         public static readonly CommandWord PREVIEW = new CommandWord(nameof(PREVIEW), (model, arg) =>
         {
-            model.setPreview(arg.Replace('\\', '/'));
+            model.Preview = arg.Replace('\\', '/');
             return null;
         });
         public static readonly CommandWord LNOBJ = new CommandWord(nameof(LNOBJ), (model, arg) =>
@@ -765,11 +765,11 @@ namespace BmsParser
             {
                 if (model.getBase() == 62)
                 {
-                    model.setLnobj(ChartDecoder.parseInt62(arg, 0));
+                    model.LNObj = ChartDecoder.parseInt62(arg, 0);
                 }
                 else
                 {
-                    model.setLnobj(ChartDecoder.parseInt36(arg, 0));
+                    model.LNObj = ChartDecoder.parseInt36(arg, 0);
                 }
             }
             catch (FormatException e)
@@ -799,7 +799,7 @@ namespace BmsParser
         {
             try
             {
-                model.setDifficulty(int.Parse(arg));
+                model.Difficulty = (Difficulty)int.Parse(arg);
             }
             catch (FormatException e)
             {
@@ -809,7 +809,7 @@ namespace BmsParser
         });
         public static readonly CommandWord BANNER = new CommandWord(nameof(BANNER), (model, arg) =>
         {
-            model.setBanner(arg.Replace('\\', '/'));
+            model.Banner = arg.Replace('\\', '/');
             return null;
         });
         public static readonly CommandWord COMMENT = new CommandWord(nameof(COMMENT), (model, arg) =>

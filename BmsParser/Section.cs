@@ -198,25 +198,25 @@ namespace BmsParser
                 // 5/10KEY  => 7/14KEY
                 if (ch2 == 7 || ch2 == 8)
                 {
-                    Mode mode = (model.getMode() == Mode.BEAT_5K) ? Mode.BEAT_7K : (model.getMode() == Mode.BEAT_10K ? Mode.BEAT_14K : null);
+                    Mode mode = (model.Mode == Mode.BEAT_5K) ? Mode.BEAT_7K : (model.Mode == Mode.BEAT_10K ? Mode.BEAT_14K : null);
                     if (mode != null)
                     {
-                        this.processData(line, (pos, data) =>
+                        this.processData(line, (Action<double, int>)((pos, data) =>
                         {
-                            model.setMode(mode);
-                        });
+                            model.Mode = mode;
+                        }));
                     }
                 }
                 // 5/7KEY  => 10/14KEY			
                 if (basech == P2_KEY_BASE || basech == P2_INVISIBLE_KEY_BASE || basech == P2_LONG_KEY_BASE || basech == P2_MINE_KEY_BASE)
                 {
-                    Mode mode = (model.getMode() == Mode.BEAT_5K) ? Mode.BEAT_10K : (model.getMode() == Mode.BEAT_7K ? Mode.BEAT_14K : null);
+                    Mode mode = (model.Mode == Mode.BEAT_5K) ? Mode.BEAT_10K : (model.Mode == Mode.BEAT_7K ? Mode.BEAT_14K : null);
                     if (mode != null)
                     {
-                        this.processData(line, (pos, data) =>
+                        this.processData(line, (Action<double, int>)((pos, data) =>
                         {
-                            model.setMode(mode);
-                        });
+                            model.Mode = mode;
+                        }));
                     }
                 }
             }
@@ -241,7 +241,7 @@ namespace BmsParser
                 }
                 if (result[i] == -1)
                 {
-                    log.Add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
+                    log.Add(new DecodeLog(WARNING, model.Title + ":チャンネル定義中の不正な値:" + line));
                     result[i] = 0;
                 }
             }
@@ -271,7 +271,7 @@ namespace BmsParser
                 }
                 else if (result == -1)
                 {
-                    log.Add(new DecodeLog(WARNING, model.getTitle() + ":チャンネル定義中の不正な値:" + line));
+                    log.Add(new DecodeLog(WARNING, model.Title + ":チャンネル定義中の不正な値:" + line));
                 }
             }
         }
@@ -291,11 +291,11 @@ namespace BmsParser
          */
         public void makeTimeLines(int[] wavmap, int[] bgamap, SortedDictionary<Double, TimeLineCache> tlcache, List<LongNote>[] lnlist, LongNote[] startln)
         {
-            int lnobj = model.getLnobj();
+            int lnobj = model.LNObj;
             int lnmode = model.getLnmode();
             this.tlcache = tlcache;
-            int[] cassign = model.getMode() == Mode.POPN_9K ? CHANNELASSIGN_POPN :
-               (model.getMode() == Mode.BEAT_7K || model.getMode() == Mode.BEAT_14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
+            int[] cassign = model.Mode == Mode.POPN_9K ? CHANNELASSIGN_POPN :
+               (model.Mode == Mode.BEAT_7K || model.Mode == Mode.BEAT_14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
             int @base = model.getBase();
             // 小節線追加
             TimeLine basetl = getTimeLine(sectionnum);
@@ -657,7 +657,7 @@ namespace BmsParser
             double bpm = le.Value.timeline.getBPM();
             double time = le.Value.time + le.Value.timeline.getMicroStop() + (240000.0 * 1000 * (section - le.Key)) / bpm;
 
-            TimeLine tl = new TimeLine(section, (long)time, model.getMode().key);
+            TimeLine tl = new TimeLine(section, (long)time, model.Mode.key);
             tl.setBPM(bpm);
             tl.setScroll(scroll);
             tlcache.put(section, new TimeLineCache(time, tl));

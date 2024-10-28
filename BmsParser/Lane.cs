@@ -21,7 +21,7 @@ namespace BmsParser
         {
             var note = new List<Note>();
             var hnote = new List<Note>();
-            foreach (TimeLine tl in model.getAllTimeLines())
+            foreach (TimeLine tl in model.Timelines)
             {
                 if (tl.existNote(lane))
                 {
