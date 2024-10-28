@@ -18,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="gekkou%287%29.bme">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="_DPAG.bms">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -49,8 +49,26 @@ namespace BmsParser.Tests
             var model = decorder.Decode("_DPAG.bms");
             Assert.AreEqual("4d8a0ebdafd666c3791c8dce3d56311c8c2edc718c714f88073e23356153f254", model.Sha256);
             Assert.AreEqual("66739cb4d49693b07fa33ed2265f1f6f", model.MD5);
-            Assert.AreEqual(1626945073, model.GetTotalNotes());
+            Assert.AreEqual(1619, model.GetTotalNotes());
             Assert.AreEqual(113072, model.LastTime);
+        }
+
+        [TestMethod]
+        public void Decord3()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var decorder = new BmsDecoder();
+            using var log = File.OpenWrite("decodelog.log");
+            using var writer = new StreamWriter(log);
+            //foreach (var str in decorder.DecodeLogs)
+            //{
+            //    writer.WriteLine(str);
+            //}
+            var model = decorder.Decode("gekkou(7).bme");
+            Assert.AreEqual("c5d6d75b2a06e1a3cdcf9f0fd89f9ff44fa570dc623bb976b5fb1ed5198a1932", model.Sha256);
+            Assert.AreEqual("d8fa134c6deb2a9e6736dd220839cfd3", model.MD5);
+            Assert.AreEqual(1200, model.GetTotalNotes());
+            Assert.AreEqual(117473, model.LastTime);
         }
     }
 }
