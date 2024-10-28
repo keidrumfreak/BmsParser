@@ -470,7 +470,7 @@ namespace BmsParser
                 timelines.put(0.0, new TimeLineCache(0.0, basetl));
                 foreach (Section section in sections)
                 {
-                    section.makeTimeLines(wm, bm, timelines, lnlist, lnendstatus);
+                    section.MakeTimeLines(wm, bm, timelines, lnlist, lnendstatus);
                 }
                 // Logger.getGlobal().info(
                 // "Section生成時間(ms) :" + (System.currentTimeMillis() - time));

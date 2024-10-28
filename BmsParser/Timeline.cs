@@ -121,7 +121,7 @@ namespace BmsParser
         /// </summary>
         public double Scroll { get; set; } = 1.0;
 
-        private Note[] notes = new Note[noteSize];
+        private Note?[] notes = new Note[noteSize];
         private Note[] hiddenNotes = new Note[noteSize];
         private readonly List<Note> bgNotes = [];
 
@@ -143,9 +143,9 @@ namespace BmsParser
 
         public bool ExistNote(int lane) => notes[lane] != null;
 
-        public Note GetNote(int lane) => notes[lane];
+        public Note? GetNote(int lane) => notes[lane];
 
-        public void SetNote(int lane, Note note)
+        public void SetNote(int lane, Note? note)
         {
             notes[lane] = note;
             if (note == null) return;

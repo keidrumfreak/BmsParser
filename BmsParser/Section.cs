@@ -35,34 +35,34 @@ namespace BmsParser
 
         public const int SCROLL = 1020;
 
-        public static readonly int[] NOTE_CHANNELS = {P1_KEY_BASE, P2_KEY_BASE ,P1_INVISIBLE_KEY_BASE, P2_INVISIBLE_KEY_BASE,
-            P1_LONG_KEY_BASE, P2_LONG_KEY_BASE, P1_MINE_KEY_BASE, P2_MINE_KEY_BASE};
+        public static readonly int[] NOTE_CHANNELS = [P1_KEY_BASE, P2_KEY_BASE ,P1_INVISIBLE_KEY_BASE, P2_INVISIBLE_KEY_BASE,
+            P1_LONG_KEY_BASE, P2_LONG_KEY_BASE, P1_MINE_KEY_BASE, P2_MINE_KEY_BASE];
 
         /**
          * 小節の拡大倍率
          */
-        private double rate = 1.0;
+        private readonly double rate = 1.0;
         /**
          * POORアニメーション
          */
-        private int[] poor = new int[0];
+        private readonly int[] poor = [];
 
-        private BmsModel model;
+        private readonly BmsModel model;
 
-        private double sectionnum;
+        private readonly double sectionnum;
 
-        private List<DecodeLog> log;
+        private readonly List<DecodeLog> log;
 
-        private List<String> channellines;
+        private readonly List<string> channellines;
 
-        public Section(BmsModel model, Section prev, List<String> lines, Dictionary<int, Double> bpmtable,
-                Dictionary<int, Double> stoptable, Dictionary<int, Double> scrolltable, List<DecodeLog> log)
+        public Section(BmsModel model, Section prev, List<string> lines, Dictionary<int, double> bpmtable,
+                Dictionary<int, double> stoptable, Dictionary<int, double> scrolltable, List<DecodeLog> log)
         {
             this.model = model;
             this.log = log;
-            int @base = model.Base;
+            var @base = model.Base;
 
-            channellines = new List<String>(lines.Count);
+            channellines = new List<string>(lines.Count);
             if (prev != null)
             {
                 sectionnum = prev.sectionnum + prev.rate;
@@ -71,9 +71,9 @@ namespace BmsParser
             {
                 sectionnum = 0;
             }
-            foreach (String line in lines)
+            foreach (var line in lines)
             {
-                int channel = ChartDecoder.parseInt36(line[4], line[5]);
+                var channel = ChartDecoder.parseInt36(line[4], line[5]);
                 switch (channel)
                 {
                     case ILLEGAL:
@@ -89,12 +89,8 @@ namespace BmsParser
                         break;
                     // 小節の拡大率
                     case SECTION_RATE:
-                        int colon_index = line.IndexOf(":");
-                        try
-                        {
-                            rate = Double.Parse(line.Substring(colon_index + 1));
-                        }
-                        catch (FormatException e)
+                        var colon_index = line.IndexOf(':');
+                        if (!double.TryParse(line[(colon_index + 1)..], out rate))
                         {
                             log.Add(new DecodeLog(State.Warning, "小節の拡大率が不正です : " + line));
                         }
@@ -114,8 +110,8 @@ namespace BmsParser
                     case POOR_PLAY:
                         poor = this.splitData(line);
                         // アニメーションが単一画像のみの定義の場合、0を除外する(ミスレイヤーチャンネルの定義が曖昧)
-                        int singleid = 0;
-                        foreach (int id in poor)
+                        var singleid = 0;
+                        foreach (var id in poor)
                         {
                             if (id != 0)
                             {
@@ -132,15 +128,14 @@ namespace BmsParser
                         }
                         if (singleid != -1)
                         {
-                            poor = new int[] { singleid };
+                            poor = [singleid];
                         }
                         break;
                     // BPM変化(拡張)
                     case BPM_CHANGE_EXTEND:
                         this.processData(line, (pos, data) =>
                         {
-                            Double bpm = bpmtable[data];
-                            if (bpm != null)
+                            if (bpmtable.TryGetValue(data, out var bpm))
                             {
                                 bpmchange.put(pos, bpm);
                             }
@@ -154,8 +149,7 @@ namespace BmsParser
                     case STOP:
                         this.processData(line, (pos, data) =>
                         {
-                            Double st = stoptable[data];
-                            if (st != null)
+                            if (stoptable.TryGetValue(data, out var st))
                             {
                                 stop.put(pos, st);
                             }
@@ -169,8 +163,7 @@ namespace BmsParser
                     case SCROLL:
                         this.processData(line, (pos, data) =>
                         {
-                            Double st = scrolltable[data];
-                            if (st != null)
+                            if (scrolltable.TryGetValue(data, out var st))
                             {
                                 scroll.put(pos, st);
                             }
@@ -182,9 +175,9 @@ namespace BmsParser
                         break;
                 }
 
-                int basech = 0;
-                int ch2 = -1;
-                foreach (int ch in NOTE_CHANNELS)
+                var basech = 0;
+                var ch2 = -1;
+                foreach (var ch in NOTE_CHANNELS)
                 {
                     if (ch <= channel && channel <= ch + 8)
                     {
@@ -197,7 +190,7 @@ namespace BmsParser
                 // 5/10KEY  => 7/14KEY
                 if (ch2 == 7 || ch2 == 8)
                 {
-                    Mode mode = (model.Mode == Mode.Beat5K) ? Mode.Beat7K : (model.Mode == Mode.Beat10K ? Mode.Beat14K : null);
+                    var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat7K : (model.Mode == Mode.Beat10K ? Mode.Beat14K : null);
                     if (mode != null)
                     {
                         this.processData(line, (Action<double, int>)((pos, data) =>
@@ -209,7 +202,7 @@ namespace BmsParser
                 // 5/7KEY  => 10/14KEY			
                 if (basech == P2_KEY_BASE || basech == P2_INVISIBLE_KEY_BASE || basech == P2_LONG_KEY_BASE || basech == P2_MINE_KEY_BASE)
                 {
-                    Mode mode = (model.Mode == Mode.Beat5K) ? Mode.Beat10K : (model.Mode == Mode.Beat7K ? Mode.Beat14K : null);
+                    var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat10K : (model.Mode == Mode.Beat7K ? Mode.Beat14K : null);
                     if (mode != null)
                     {
                         this.processData(line, (Action<double, int>)((pos, data) =>
@@ -221,14 +214,14 @@ namespace BmsParser
             }
         }
 
-        private int[] splitData(String line)
+        private int[] splitData(string line)
         {
-            int @base = model.Base;
-            int findex = line.IndexOf(":") + 1;
-            int lindex = line.Length;
-            int split = (lindex - findex) / 2;
-            int[] result = new int[split];
-            for (int i = 0; i < split; i++)
+            var @base = model.Base;
+            var findex = line.IndexOf(':') + 1;
+            var lindex = line.Length;
+            var split = (lindex - findex) / 2;
+            var result = new int[split];
+            for (var i = 0; i < split; i++)
             {
                 if (@base == 62)
                 {
@@ -247,14 +240,14 @@ namespace BmsParser
             return result;
         }
 
-        private void processData(String line, Action<double, int> processor)
+        private void processData(string line, Action<double, int> processor)
         {
-            int @base = model.Base;
-            int findex = line.IndexOf(":") + 1;
-            int lindex = line.Length;
-            int split = (lindex - findex) / 2;
+            var @base = model.Base;
+            var findex = line.IndexOf(':') + 1;
+            var lindex = line.Length;
+            var split = (lindex - findex) / 2;
             int result;
-            for (int i = 0; i < split; i++)
+            for (var i = 0; i < split; i++)
             {
                 if (@base == 62)
                 {
@@ -275,37 +268,39 @@ namespace BmsParser
             }
         }
 
-        private SortedDictionary<Double, Double> bpmchange = new SortedDictionary<Double, Double>();
-        private SortedDictionary<Double, Double> stop = new SortedDictionary<Double, Double>();
-        private SortedDictionary<Double, Double> scroll = new SortedDictionary<Double, Double>();
+        private readonly SortedDictionary<double, double> bpmchange = [];
+        private readonly SortedDictionary<double, double> stop = [];
+        private readonly SortedDictionary<double, double> scroll = [];
 
-        private static int[] CHANNELASSIGN_BEAT5 = { 0, 1, 2, 3, 4, 5, -1, -1, -1, 6, 7, 8, 9, 10, 11, -1, -1, -1 };
-        private static int[] CHANNELASSIGN_BEAT7 = { 0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14 };
-        private static int[] CHANNELASSIGN_POPN = { 0, 1, 2, 3, 4, -1, -1, -1, -1, -1, 5, 6, 7, 8, -1, -1, -1, -1 };
+        private static readonly int[] CHANNELASSIGN_BEAT5 = [0, 1, 2, 3, 4, 5, -1, -1, -1, 6, 7, 8, 9, 10, 11, -1, -1, -1];
+        private static readonly int[] CHANNELASSIGN_BEAT7 = [0, 1, 2, 3, 4, 7, -1, 5, 6, 8, 9, 10, 11, 12, 15, -1, 13, 14];
+        private static readonly int[] CHANNELASSIGN_POPN = [0, 1, 2, 3, 4, -1, -1, -1, -1, -1, 5, 6, 7, 8, -1, -1, -1, -1];
 
-        private SortedDictionary<Double, TimeLineCache> tlcache;
-
-        /**
-         * SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
-         */
-        public void makeTimeLines(int[] wavmap, int[] bgamap, SortedDictionary<Double, TimeLineCache> tlcache, List<LongNote>[] lnlist, LongNote[] startln)
+        /// <summary>
+        /// SectionモデルからTimeLineモデルを作成し、BMSModelに登録する
+        /// </summary>
+        /// <param name="wavmap"></param>
+        /// <param name="bgamap"></param>
+        /// <param name="tlcache"></param>
+        /// <param name="lnlist"></param>
+        /// <param name="startln"></param>
+        public void MakeTimeLines(int[] wavmap, int[] bgamap, SortedDictionary<double, TimeLineCache> tlcache, List<LongNote>[] lnlist, LongNote?[] startln)
         {
-            int lnobj = model.LNObj;
+            var lnobj = model.LNObj;
             var lnmode = model.LNMode;
-            this.tlcache = tlcache;
-            int[] cassign = model.Mode == Mode.Popn9K ? CHANNELASSIGN_POPN :
+            var cassign = model.Mode == Mode.Popn9K ? CHANNELASSIGN_POPN :
                (model.Mode == Mode.Beat7K || model.Mode == Mode.Beat14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
-            int @base = model.Base;
+            var @base = model.Base;
             // 小節線追加
-            Timeline basetl = getTimeLine(sectionnum);
+            var basetl = getTimeLine(sectionnum);
             basetl.IsSectionLine = true;
 
             if (poor.Length > 0)
             {
-                Sequence[] poors = new Sequence[poor.Length + 1];
-                int poortime = 500;
+                var poors = new Sequence[poor.Length + 1];
+                var poortime = 500;
 
-                for (int i = 0; i < poor.Length; i++)
+                for (var i = 0; i < poor.Length; i++)
                 {
                     if (bgamap[poor[i]] != -2)
                     {
@@ -316,8 +311,8 @@ namespace BmsParser
                         poors[i] = new Sequence((long)(i * poortime / poor.Length), -1);
                     }
                 }
-                poors[poors.Length - 1] = new Sequence(poortime);
-                basetl.EventLayer = (new Layer[] { new Layer(new Event(EventType.Miss, 1), new Sequence[][] { poors }) });
+                poors[^1] = new Sequence(poortime);
+                basetl.EventLayer = ([new Layer(new Event(EventType.Miss, 1), [poors])]);
             }
             // BPM変化。ストップシーケンステーブル準備
             var stops = stop.GetEnumerator();
@@ -329,9 +324,9 @@ namespace BmsParser
 
             while (!ste.Equals(default(KeyValuePair<double, double>)) || !bce.Equals(default(KeyValuePair<double, double>)) || !sce.Equals(default(KeyValuePair<double, double>)))
             {
-                double bc = !bce.Equals(default(KeyValuePair<double, double>)) ? bce.Key : 2;
-                double st = !ste.Equals(default(KeyValuePair<double, double>)) ? ste.Key : 2;
-                double sc = !sce.Equals(default(KeyValuePair<double, double>)) ? sce.Key : 2;
+                var bc = !bce.Equals(default(KeyValuePair<double, double>)) ? bce.Key : 2;
+                var st = !ste.Equals(default(KeyValuePair<double, double>)) ? ste.Key : 2;
+                var sc = !sce.Equals(default(KeyValuePair<double, double>)) ? sce.Key : 2;
                 if (sc <= st && sc <= bc)
                 {
                     getTimeLine(sectionnum + sc * rate).Scroll = sce.Value;
@@ -344,16 +339,16 @@ namespace BmsParser
                 }
                 else if (st <= 1)
                 {
-                    Timeline tl = getTimeLine(sectionnum + ste.Key * rate);
+                    var tl = getTimeLine(sectionnum + ste.Key * rate);
                     tl.MicroStop = (long)(1000.0 * 1000 * 60 * 4 * ste.Value / (tl.Bpm));
                     ste = stops.MoveNext() ? stops.Current : default;
                 }
             }
 
-            foreach (String line in channellines)
+            foreach (var line in channellines)
             {
-                int channel = ChartDecoder.parseInt36(line[4], line[5]);
-                int tmpkey = 0;
+                var channel = ChartDecoder.parseInt36(line[4], line[5]);
+                var tmpkey = 0;
                 if (channel >= P1_KEY_BASE && channel < P1_KEY_BASE + 9)
                 {
                     tmpkey = cassign[channel - P1_KEY_BASE];
@@ -394,7 +389,7 @@ namespace BmsParser
                     tmpkey = cassign[channel - P2_MINE_KEY_BASE + 9];
                     channel = P1_MINE_KEY_BASE;
                 }
-                int key = tmpkey;
+                var key = tmpkey;
                 if (key == -1)
                 {
                     continue;
@@ -405,7 +400,7 @@ namespace BmsParser
                         this.processData(line, (Action<double, int>)((pos, data) =>
                         {
                             // normal note, lnobj
-                            Timeline tl = getTimeLine(sectionnum + rate * pos);
+                            var tl = getTimeLine(sectionnum + rate * pos);
                             if (tl.ExistNote(key))
                             {
                                 log.Add(new DecodeLog(State.Warning, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
@@ -421,41 +416,43 @@ namespace BmsParser
                                     {
                                         continue;
                                     }
-                                    Timeline tl2 = e.Value.Timeline;
+                                    var tl2 = e.Value.Timeline;
                                     if (tl2.ExistNote(key))
                                     {
-                                        Note note = tl2.GetNote(key);
+                                        var note = tl2.GetNote(key);
                                         if (note is NormalNote)
                                         {
                                             // LNOBJの直前のノートをLNに差し替える
-                                            LongNote ln = new LongNote(note.Wav);
-                                            ln.Type = lnmode;
+                                            var ln = new LongNote(note.Wav)
+                                            {
+                                                Type = lnmode
+                                            };
                                             tl2.SetNote(key, ln);
-                                            LongNote lnend = new LongNote(-2);
+                                            var lnend = new LongNote(-2);
                                             tl.SetNote(key, lnend);
                                             ln.Pair = lnend;
 
                                             if (lnlist[key] == null)
                                             {
-                                                lnlist[key] = new List<LongNote>();
+                                                lnlist[key] = [];
                                             }
                                             lnlist[key].Add(ln);
                                             break;
                                         }
-                                        else if (note is LongNote && ((LongNote)note).Pair == null)
+                                        else if (note is LongNote ln && ln.Pair == null)
                                         {
                                             log.Add(new DecodeLog(State.Warning,
                                                     (string)("LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
                                                             + tl2.Section + " - " + tl.Section)));
-                                            LongNote lnend = new LongNote(-2);
+                                            var lnend = new LongNote(-2);
                                             tl.SetNote(key, lnend);
-                                            ((LongNote)note).Pair = lnend;
+                                            ln.Pair = lnend;
 
                                             if (lnlist[key] == null)
                                             {
-                                                lnlist[key] = new List<LongNote>();
+                                                lnlist[key] = [];
                                             }
-                                            lnlist[key].Add((LongNote)note);
+                                            lnlist[key].Add(ln);
                                             startln[key] = null;
                                             break;
                                         }
@@ -485,14 +482,14 @@ namespace BmsParser
                         this.processData(line, (Action<double, int>)((pos, data) =>
                         {
                             // long note
-                            Timeline tl = getTimeLine(sectionnum + rate * pos);
-                            bool insideln = false;
+                            var tl = getTimeLine(sectionnum + rate * pos);
+                            var insideln = false;
                             if (!insideln && lnlist[key] != null)
                             {
-                                double section = tl.Section;
-                                foreach (LongNote ln in lnlist[key])
+                                var section = tl.Section;
+                                foreach (var ln in lnlist[key])
                                 {
-                                    if (ln.Section <= section && section <= ln.Pair.Section)
+                                    if (ln.Section <= section && section <= ln.Pair?.Section)
                                     {
                                         insideln = true;
                                         break;
@@ -502,12 +499,13 @@ namespace BmsParser
 
                             if (!insideln)
                             {
+                                var keyLN = startln[key];
                                 // LN処理
-                                if (startln[key] == null)
+                                if (keyLN == null)
                                 {
                                     if (tl.ExistNote(key))
                                     {
-                                        Note note = tl.GetNote(key);
+                                        var note = tl.GetNote(key);
                                         log.Add(new DecodeLog(State.Warning, "LN開始位置に通常ノートが存在します。レーン: "
                                                 + (key + 1) + " - Time(ms):" + tl.Time));
                                         if (note is NormalNote && note.Wav != wavmap[data])
@@ -515,11 +513,11 @@ namespace BmsParser
                                             tl.AddBackGroundNote(note);
                                         }
                                     }
-                                    LongNote ln = new LongNote(wavmap[data]);
+                                    var ln = new LongNote(wavmap[data]);
                                     tl.SetNote(key, ln);
                                     startln[key] = ln;
                                 }
-                                else if (startln[(int)key].Section == double.MinValue)
+                                else if (keyLN.Section == double.MinValue)
                                 {
                                     startln[key] = null;
                                 }
@@ -533,17 +531,17 @@ namespace BmsParser
                                             continue;
                                         }
 
-                                        Timeline tl2 = e.Value.Timeline;
-                                        if (tl2.Section == startln[(int)key].Section)
+                                        var tl2 = e.Value.Timeline;
+                                        if (tl2.Section == keyLN.Section)
                                         {
-                                            Note note = startln[key];
+                                            Note note = keyLN;
                                             ((LongNote)note).Type = lnmode;
-                                            LongNote noteend = new LongNote(startln[key].Wav != wavmap[data] ? wavmap[data] : -2);
+                                            var noteend = new LongNote(keyLN.Wav != wavmap[data] ? wavmap[data] : -2);
                                             tl.SetNote(key, noteend);
                                             ((LongNote)note).Pair = noteend;
                                             if (lnlist[key] == null)
                                             {
-                                                lnlist[key] = new List<LongNote>();
+                                                lnlist[key] = [];
                                             }
                                             lnlist[key].Add((LongNote)note);
 
@@ -552,7 +550,7 @@ namespace BmsParser
                                         }
                                         else if (tl2.ExistNote(key))
                                         {
-                                            Note note = tl2.GetNote(key);
+                                            var note = tl2.GetNote(key);
                                             log.Add(new DecodeLog(State.Warning, "LN内に通常ノートが存在します。レーン: "
                                                     + (key + 1) + " - Time(ms):" + tl2.Time));
                                             tl2.SetNote(key, null);
@@ -566,19 +564,22 @@ namespace BmsParser
                             }
                             else
                             {
-                                if (startln[key] == null)
+                                var keyLN = startln[key];
+                                if (keyLN == null)
                                 {
-                                    LongNote ln = new LongNote(wavmap[data]);
-                                    ln.Section = double.MinValue;
+                                    var ln = new LongNote(wavmap[data])
+                                    {
+                                        Section = double.MinValue
+                                    };
                                     startln[key] = ln;
                                     log.Add(new DecodeLog(State.Warning, "LN内にLN開始ノートを定義しようとしています : "
                                             + (key + 1) + " - Section : " + tl.Section + " - Time(ms):" + tl.Time));
                                 }
                                 else
                                 {
-                                    if (startln[(int)key].Section != double.MinValue)
+                                    if (keyLN.Section != double.MinValue)
                                     {
-                                        tlcache[startln[(int)key].Section].Timeline.SetNote(key, null);
+                                        tlcache[keyLN.Section].Timeline.SetNote(key, null);
                                     }
                                     startln[key] = null;
                                     log.Add(new DecodeLog(State.Warning, "LN内にLN終端ノートを定義しようとしています : "
@@ -592,14 +593,14 @@ namespace BmsParser
                         // mine note
                         this.processData(line, (Action<double, int>)((pos, data) =>
                         {
-                            Timeline tl = getTimeLine(sectionnum + rate * pos);
-                            bool insideln = tl.ExistNote(key);
+                            var tl = getTimeLine(sectionnum + rate * pos);
+                            var insideln = tl.ExistNote(key);
                             if (!insideln && lnlist[key] != null)
                             {
-                                double section = tl.Section;
-                                foreach (LongNote ln in lnlist[key])
+                                var section = tl.Section;
+                                foreach (var ln in lnlist[key])
                                 {
-                                    if (ln.Section <= section && section <= ln.Pair.Section)
+                                    if (ln.Section <= section && section <= ln.Pair?.Section)
                                     {
                                         insideln = true;
                                         break;
@@ -644,23 +645,25 @@ namespace BmsParser
 
                 }
             }
-        }
 
-        private Timeline getTimeLine(double section)
-        {
-            if (tlcache.TryGetValue(section, out var tlc))
-                return tlc.Timeline;
+            Timeline getTimeLine(double section)
+            {
+                if (tlcache.TryGetValue(section, out var tlc))
+                    return tlc.Timeline;
 
-            var le = tlcache.LastOrDefault(c => c.Key < section);
-            double scroll = le.Value.Timeline.Scroll;
-            double bpm = le.Value.Timeline.Bpm;
-            double time = le.Value.Time + le.Value.Timeline.MicroStop + (240000.0 * 1000 * (section - le.Key)) / bpm;
+                var le = tlcache.LastOrDefault(c => c.Key < section);
+                var scroll = le.Value.Timeline.Scroll;
+                var bpm = le.Value.Timeline.Bpm;
+                var time = le.Value.Time + le.Value.Timeline.MicroStop + (240000.0 * 1000 * (section - le.Key)) / bpm;
 
-            Timeline tl = new Timeline(section, (long)time, model.Mode.Key);
-            tl.Bpm = bpm;
-            tl.Scroll = scroll;
-            tlcache.put(section, new TimeLineCache(time, tl));
-            return tl;
+                var tl = new Timeline(section, (long)time, model.Mode.Key)
+                {
+                    Bpm = bpm,
+                    Scroll = scroll
+                };
+                tlcache.put(section, new TimeLineCache(time, tl));
+                return tl;
+            }
         }
     }
 }
