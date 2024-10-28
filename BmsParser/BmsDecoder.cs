@@ -518,7 +518,6 @@ namespace BmsParser
                 }
 
                 model.ChartInformation = new ChartInformation(path, lntype, selectedRandom);
-                PrintLog(path);
                 return model;
             }
             catch (IOException)

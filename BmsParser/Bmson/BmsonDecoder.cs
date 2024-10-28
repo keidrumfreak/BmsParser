@@ -463,7 +463,6 @@ namespace BmsParser.Bmson
             //        + (System.currentTimeMillis() - currnttime));
 
             model.ChartInformation = new ChartInformation(path, lntype, null);
-            PrintLog(path);
             return model;
 
             Timeline getTimeLine(int y, double resolution)

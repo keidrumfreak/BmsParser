@@ -208,25 +208,6 @@ namespace BmsParser
             return new string(sb.ToString().Reverse().ToArray());
         }
 
-        protected void PrintLog(string? path)
-        {
-            log.ForEach(log =>
-            {
-                switch (log.State)
-                {
-                    case State.Info:
-                        //Logger.getGlobal().info(path + " : " + log.getMessage());
-                        break;
-                    case State.Warning:
-                        //Logger.getGlobal().warning(path + " : " + log.getMessage());
-                        break;
-                    case State.Error:
-                        //Logger.getGlobal().severe(path + " : " + log.getMessage());
-                        break;
-                }
-            });
-        }
-
         protected static string GetSha256Hash(byte[] input)
         {
             var arr = SHA256.HashData(input);
