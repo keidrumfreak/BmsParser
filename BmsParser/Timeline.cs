@@ -114,7 +114,7 @@ namespace BmsParser
         /// <summary>
         /// POORレイヤー
         /// </summary>
-        public Layer[] EventLayer { get; set; } = Layer.EMPTY;
+        public Layer[] EventLayer { get; set; } = [];
 
         /// <summary>
         /// スクロール速度

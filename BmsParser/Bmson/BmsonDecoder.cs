@@ -487,7 +487,7 @@ namespace BmsParser
             {
                 String[] bgamap = new String[bmson.Bga.BgaHeader.Length];
                 Dictionary<int, int> idmap = new Dictionary<int, int>(bmson.Bga.BgaHeader.Length);
-                Dictionary<int, Layer.Sequence[]> seqmap = new Dictionary<int, Layer.Sequence[]>();
+                Dictionary<int, Sequence[]> seqmap = new Dictionary<int, Sequence[]>();
                 for (int i = 0; i < bmson.Bga.BgaHeader.Length; i++)
                 {
                     var bh = bmson.Bga.BgaHeader[i];
@@ -500,17 +500,17 @@ namespace BmsParser
                     {
                         if (n != null)
                         {
-                            Layer.Sequence[] sequence = new Layer.Sequence[n.Sequence.Length];
+                            Sequence[] sequence = new Sequence[n.Sequence.Length];
                             for (int i = 0; i < sequence.Length; i++)
                             {
                                 var seq = n.Sequence[i];
                                 if (seq.ID != int.MinValue)
                                 {
-                                    sequence[i] = new Layer.Sequence(seq.Time, seq.ID.Value);
+                                    sequence[i] = new Sequence(seq.Time, seq.ID.Value);
                                 }
                                 else
                                 {
-                                    sequence[i] = new Layer.Sequence(seq.Time);
+                                    sequence[i] = new Sequence(seq.Time);
                                 }
                             }
                             seqmap.put(n.ID, sequence);
@@ -529,18 +529,18 @@ namespace BmsParser
                     foreach (var n in bmson.Bga.LayerEvents)
                     {
                         int[] idset = n.IDSet != null ? n.IDSet : new int[] { n.ID };
-                        Layer.Sequence[][] seqs = new Layer.Sequence[idset.Length][];
-                        Layer.Event @event = null;
+                        Sequence[][] seqs = new Sequence[idset.Length][];
+                        Event @event = null;
                         switch (n.Condition != null ? n.Condition : "")
                         {
                             case "play":
-                                @event = new Layer.Event(EventType.PLAY, n.Interval);
+                                @event = new Event(EventType.Play, n.Interval);
                                 break;
                             case "miss":
-                                @event = new Layer.Event(EventType.MISS, n.Interval);
+                                @event = new Event(EventType.Miss, n.Interval);
                                 break;
                             default:
-                                @event = new Layer.Event(EventType.ALWAYS, n.Interval);
+                                @event = new Event(EventType.Always, n.Interval);
                                 break;
                         }
                         for (int seqindex = 0; seqindex < seqs.Length; seqindex++)
@@ -552,7 +552,7 @@ namespace BmsParser
                             }
                             else
                             {
-                                seqs[seqindex] = new Layer.Sequence[] { new Layer.Sequence(0, idmap[n.ID]), new Layer.Sequence(500) };
+                                seqs[seqindex] = new Sequence[] { new Sequence(0, idmap[n.ID]), new Sequence(500) };
                             }
                         }
                         getTimeLine(n.Y, resolution).EventLayer = (new Layer[] { new Layer(@event, seqs) });
@@ -564,13 +564,13 @@ namespace BmsParser
                     {
                         if (seqmap.ContainsKey(n.ID))
                         {
-                            getTimeLine(n.Y, resolution).EventLayer = (new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
-                                new Layer.Sequence[][] {seqmap[n.ID]})});
+                            getTimeLine(n.Y, resolution).EventLayer = (new Layer[] {new Layer(new Event(EventType.Miss, 1),
+                                new Sequence[][] {seqmap[n.ID]})});
                         }
                         else
                         {
-                            getTimeLine(n.Y, resolution).EventLayer = (new Layer[] {new Layer(new Layer.Event(EventType.MISS, 1),
-                                new Layer.Sequence[][] {[new Layer.Sequence(0, idmap[n.ID]),new Layer.Sequence(500)]})});
+                            getTimeLine(n.Y, resolution).EventLayer = (new Layer[] {new Layer(new Event(EventType.Miss, 1),
+                                new Sequence[][] {[new Sequence(0, idmap[n.ID]),new Sequence(500)]})});
                         }
                     }
                 }

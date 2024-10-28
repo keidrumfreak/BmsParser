@@ -302,22 +302,22 @@ namespace BmsParser
 
             if (poor.Length > 0)
             {
-                Layer.Sequence[] poors = new Layer.Sequence[poor.Length + 1];
+                Sequence[] poors = new Sequence[poor.Length + 1];
                 int poortime = 500;
 
                 for (int i = 0; i < poor.Length; i++)
                 {
                     if (bgamap[poor[i]] != -2)
                     {
-                        poors[i] = new Layer.Sequence((long)(i * poortime / poor.Length), bgamap[poor[i]]);
+                        poors[i] = new Sequence((long)(i * poortime / poor.Length), bgamap[poor[i]]);
                     }
                     else
                     {
-                        poors[i] = new Layer.Sequence((long)(i * poortime / poor.Length), -1);
+                        poors[i] = new Sequence((long)(i * poortime / poor.Length), -1);
                     }
                 }
-                poors[poors.Length - 1] = new Layer.Sequence(poortime);
-                basetl.EventLayer = (new Layer[] { new Layer(new Layer.Event(EventType.MISS, 1), new Layer.Sequence[][] { poors }) });
+                poors[poors.Length - 1] = new Sequence(poortime);
+                basetl.EventLayer = (new Layer[] { new Layer(new Event(EventType.Miss, 1), new Sequence[][] { poors }) });
             }
             // BPM変化。ストップシーケンステーブル準備
             var stops = stop.GetEnumerator();
