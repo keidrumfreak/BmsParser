@@ -31,10 +31,10 @@ namespace BmsParser
         public Bga Bga { get; set; }
 
         [JsonPropertyName("mine_channels")]
-        public MineChannel[] MineChannels { get; set; } = Array.Empty<MineChannel>();
+        public MineChannel[] MineChannels { get; set; } = [];
 
         [JsonPropertyName("key_channels")]
-        public MineChannel[] KeyChannels { get; set; } = Array.Empty<MineChannel>();
+        public MineChannel[] KeyChannels { get; set; } = [];
     }
 
     class BmsonInfo
@@ -49,7 +49,7 @@ namespace BmsParser
         public string Artist { get; set; }
 
         [JsonPropertyName("subartists")]
-        public string[] SubArtists { get; set; } = Array.Empty<string>();
+        public string[] SubArtists { get; set; } = [];
 
         [JsonPropertyName("genre")]
         public string Genre { get; set; }
@@ -214,7 +214,7 @@ namespace BmsParser
         public int Y { get; set; }
 
         [JsonPropertyName("rate")]
-        public double rate { get; set; }
+        public double Rate { get; set; }
     }
 
     public class MineChannel

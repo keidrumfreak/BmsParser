@@ -28,7 +28,7 @@ namespace BmsParser
             var stop = new List<Timeline>();
 
             Timeline? prev = null;
-            foreach (Timeline tl in model.Timelines)
+            foreach (var tl in model.Timelines)
             {
                 if (tl.IsSectionLine)
                 {

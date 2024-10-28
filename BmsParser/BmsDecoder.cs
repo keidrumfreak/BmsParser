@@ -11,11 +11,11 @@ namespace BmsParser
     public class BmsDecoder : ChartDecoder
     {
 
-        List<String> wavlist = new List<String>(62 * 62);
-        private int[] wm = new int[62 * 62];
+        readonly List<string> wavlist = new(62 * 62);
+        private readonly int[] wm = new int[62 * 62];
 
-        List<String> bgalist = new List<String>(62 * 62);
-        private int[] bm = new int[62 * 62];
+        readonly List<string> bgalist = new(62 * 62);
+        private readonly int[] bm = new int[62 * 62];
 
         public BmsDecoder(LNType lnType = LNType.LongNote)
         {
@@ -34,7 +34,7 @@ namespace BmsParser
             return model;
         }
 
-        public override BmsModel Decode(ChartInformation info)
+        public override BmsModel? Decode(ChartInformation info)
         {
             try
             {
@@ -49,39 +49,39 @@ namespace BmsParser
             return null;
         }
 
-        protected BmsModel decode(string f)
-        {
-            //Logger.getGlobal().fine("BMSファイル解析開始 :" + f);
-            try
-            {
-                BmsModel model = this.decode(f, File.ReadAllBytes(f), f.ToLower().EndsWith(".pms"), null);
-                if (model == null)
-                {
-                    return null;
-                }
-                //Logger.getGlobal().fine("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().Length);
-                return model;
-            }
-            catch (IOException e)
-            {
-                log.Add(new DecodeLog(State.Error, "BMSファイルが見つかりません"));
-                //Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
-            }
-            return null;
-        }
+        //protected BmsModel? Decode(string f)
+        //{
+        //    //Logger.getGlobal().fine("BMSファイル解析開始 :" + f);
+        //    try
+        //    {
+        //        BmsModel model = this.decode(f, File.ReadAllBytes(f), f.ToLower().EndsWith(".pms"), null);
+        //        if (model == null)
+        //        {
+        //            return null;
+        //        }
+        //        //Logger.getGlobal().fine("BMSファイル解析完了 :" + f.toString() + " - TimeLine数:" + model.getAllTimes().Length);
+        //        return model;
+        //    }
+        //    catch (IOException e)
+        //    {
+        //        log.Add(new DecodeLog(State.Error, "BMSファイルが見つかりません"));
+        //        //Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
+        //    }
+        //    return null;
+        //}
 
 
-        private List<String>[] lines = new List<string>[1000];
+        private readonly List<string>[] lines = new List<string>[1000];
 
-        private Dictionary<int, Double> scrolltable = new Dictionary<int, double>();
-        private Dictionary<int, Double> stoptable = new Dictionary<int, Double>();
-        private Dictionary<int, Double> bpmtable = new Dictionary<int, Double>();
-        private LinkedList<int> randoms = new LinkedList<int>();
-        private LinkedList<int> srandoms = new LinkedList<int>();
-        private LinkedList<int> crandom = new LinkedList<int>();
-        private LinkedList<Boolean> skip = new LinkedList<Boolean>();
+        private readonly Dictionary<int, double> scrolltable = [];
+        private readonly Dictionary<int, double> stoptable = [];
+        private readonly Dictionary<int, double> bpmtable = [];
+        private readonly LinkedList<int> randoms = new();
+        private readonly LinkedList<int> srandoms = new();
+        private readonly LinkedList<int> crandom = new();
+        private readonly LinkedList<bool> skip = new();
 
-        private static CommandWord[] commandWords = CommandWord.values;
+        private static readonly CommandWord[] commandWords = CommandWord.values;
 
         /**
          * 指定したBMSファイルをモデルにデコードする
@@ -89,7 +89,7 @@ namespace BmsParser
          * @param data
          * @return
          */
-        public BmsModel decode(byte[] data, bool ispms, int[] random)
+        public BmsModel Decode(byte[] data, bool ispms, int[] random)
         {
             return this.decode(null, data, ispms, random);
         }
@@ -100,11 +100,11 @@ namespace BmsParser
          * @param data
          * @return
          */
-        private BmsModel decode(string path, byte[] data, bool ispms, int[] selectedRandom)
+        private BmsModel decode(string path, byte[] data, bool ispms, int[]? selectedRandom)
         {
             log.Clear();
-            long time = DateTime.Now.Ticks;
-            BmsModel model = new BmsModel(ispms ? Mode.Popn9K : Mode.Beat5K);
+            var time = DateTime.Now.Ticks;
+            var model = new BmsModel(ispms ? Mode.Popn9K : Mode.Beat5K);
             scrolltable.Clear();
             stoptable.Clear();
             bpmtable.Clear();
@@ -121,7 +121,7 @@ namespace BmsParser
             //    return null;
             //}
 
-            int maxsec = 0;
+            var maxsec = 0;
             // BMS読み込み、ハッシュ値取得
             //try (BufferedReader br = new BufferedReader(new InputStreamReader(
             //        new DigestInputStream(new DigestInputStream(new ByteArrayInputStream(data), md5digest), sha256digest),
@@ -134,17 +134,14 @@ namespace BmsParser
                 // Logger.getGlobal().info(
                 // "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
 
-                String line = null;
+                string line = null;
                 wavlist.Clear();
                 Array.Fill(wm, -2);
                 bgalist.Clear();
                 Array.Fill(bm, -2);
-                foreach (List<String> l in lines)
+                foreach (var l in lines)
                 {
-                    if (l != null)
-                    {
-                        l.Clear();
-                    }
+                    l?.Clear();
                 }
 
                 randoms.Clear();
@@ -167,7 +164,7 @@ namespace BmsParser
                         {
                             try
                             {
-                                int r = int.Parse(line.Substring(8).Trim());
+                                var r = int.Parse(line[8..].Trim());
                                 randoms.AddLast(r);
                                 if (selectedRandom != null)
                                 {
@@ -191,7 +188,7 @@ namespace BmsParser
                             {
                                 try
                                 {
-                                    skip.AddLast((crandom.Last.Value != int.Parse(line.Substring(4).Trim())));
+                                    skip.AddLast((crandom.Last.Value != int.Parse(line[4..].Trim())));
                                 }
                                 catch (FormatException e)
                                 {
@@ -227,22 +224,19 @@ namespace BmsParser
                         }
                         else if (skip.Count == 0 || skip.Last == null)
                         {
-                            char c = line[1];
-                            int @base = model.Base;
-                            if ('0' <= c && c <= '9' && line.Count() > 6)
+                            var c = line[1];
+                            var @base = model.Base;
+                            if ('0' <= c && c <= '9' && line.Length > 6)
                             {
                                 // line = line.toUpperCase();
                                 // 楽譜
-                                char c2 = line[2];
-                                char c3 = line[3];
+                                var c2 = line[2];
+                                var c3 = line[3];
                                 if ('0' <= c2 && c2 <= '9' && '0' <= c3 && c3 <= '9')
                                 {
-                                    int bar_index = (c - '0') * 100 + (c2 - '0') * 10 + (c3 - '0');
-                                    List<String> l = lines[bar_index];
-                                    if (l == null)
-                                    {
-                                        l = lines[bar_index] = new List<String>();
-                                    }
+                                    var bar_index = (c - '0') * 100 + (c2 - '0') * 10 + (c3 - '0');
+                                    var l = lines[bar_index];
+                                    l ??= lines[bar_index] = [];
                                     l.Add(line);
                                     maxsec = (maxsec > bar_index) ? maxsec : bar_index;
                                 }
@@ -258,8 +252,8 @@ namespace BmsParser
                                     // BPMは小数点のケースがある(FREEDOM DiVE)
                                     try
                                     {
-                                        String arg = line.Substring(5).Trim();
-                                        double bpm = Double.Parse(arg);
+                                        var arg = line[5..].Trim();
+                                        var bpm = double.Parse(arg);
                                         if (bpm > 0)
                                         {
                                             model.Bpm = bpm;
@@ -278,16 +272,16 @@ namespace BmsParser
                                 {
                                     try
                                     {
-                                        double bpm = Double.Parse(line.Substring(7).Trim());
+                                        var bpm = double.Parse(line[7..].Trim());
                                         if (bpm > 0)
                                         {
                                             if (@base == 62)
                                             {
-                                                bpmtable.put(ChartDecoder.parseInt62(line, 4), bpm);
+                                                bpmtable.Put(ChartDecoder.ParseInt62(line, 4), bpm);
                                             }
                                             else
                                             {
-                                                bpmtable.put(ChartDecoder.parseInt36(line, 4), bpm);
+                                                bpmtable.Put(ChartDecoder.ParseInt36(line, 4), bpm);
                                             }
                                         }
                                         else
@@ -308,14 +302,14 @@ namespace BmsParser
                                 {
                                     try
                                     {
-                                        String file_name = line.Substring(7).Trim().Replace('\\', '/');
+                                        var file_name = line[7..].Trim().Replace('\\', '/');
                                         if (@base == 62)
                                         {
-                                            wm[ChartDecoder.parseInt62(line, 4)] = wavlist.Count;
+                                            wm[ChartDecoder.ParseInt62(line, 4)] = wavlist.Count;
                                         }
                                         else
                                         {
-                                            wm[ChartDecoder.parseInt36(line, 4)] = wavlist.Count;
+                                            wm[ChartDecoder.ParseInt36(line, 4)] = wavlist.Count;
                                         }
                                         wavlist.Add(file_name);
                                     }
@@ -336,14 +330,14 @@ namespace BmsParser
                                 {
                                     try
                                     {
-                                        String file_name = line.Substring(7).Trim().Replace('\\', '/');
+                                        var file_name = line[7..].Trim().Replace('\\', '/');
                                         if (@base == 62)
                                         {
-                                            bm[ChartDecoder.parseInt62(line, 4)] = bgalist.Count;
+                                            bm[ChartDecoder.ParseInt62(line, 4)] = bgalist.Count;
                                         }
                                         else
                                         {
-                                            bm[ChartDecoder.parseInt36(line, 4)] = bgalist.Count;
+                                            bm[ChartDecoder.ParseInt36(line, 4)] = bgalist.Count;
                                         }
                                         bgalist.Add(file_name);
                                     }
@@ -363,7 +357,7 @@ namespace BmsParser
                                 {
                                     try
                                     {
-                                        double stop = Double.Parse(line.Substring(8).Trim()) / 192;
+                                        var stop = double.Parse(line[8..].Trim()) / 192;
                                         if (stop < 0)
                                         {
                                             stop = Math.Abs(stop);
@@ -371,11 +365,11 @@ namespace BmsParser
                                         }
                                         if (@base == 62)
                                         {
-                                            stoptable.put(ChartDecoder.parseInt62(line, 5), stop);
+                                            stoptable.Put(ChartDecoder.ParseInt62(line, 5), stop);
                                         }
                                         else
                                         {
-                                            stoptable.put(ChartDecoder.parseInt36(line, 5), stop);
+                                            stoptable.Put(ChartDecoder.ParseInt36(line, 5), stop);
                                         }
                                     }
                                     catch (FormatException e)
@@ -394,14 +388,14 @@ namespace BmsParser
                                 {
                                     try
                                     {
-                                        double scroll = Double.Parse(line.Substring(10).Trim());
+                                        var scroll = double.Parse(line[10..].Trim());
                                         if (@base == 62)
                                         {
-                                            scrolltable.put(ChartDecoder.parseInt62(line, 7), scroll);
+                                            scrolltable.Put(ChartDecoder.ParseInt62(line, 7), scroll);
                                         }
                                         else
                                         {
-                                            scrolltable.put(ChartDecoder.parseInt36(line, 7), scroll);
+                                            scrolltable.Put(ChartDecoder.ParseInt36(line, 7), scroll);
                                         }
                                     }
                                     catch (FormatException e)
@@ -416,11 +410,11 @@ namespace BmsParser
                             }
                             else
                             {
-                                foreach (CommandWord cw in commandWords)
+                                foreach (var cw in commandWords)
                                 {
                                     if (line.Length > cw.name.Length + 2 && matchesReserveWord(line, cw.name))
                                     {
-                                        DecodeLog log = cw.function(model, line.Substring(cw.name.Length + 2).Trim());
+                                        var log = cw.function(model, line[(cw.name.Length + 2)..].Trim());
                                         if (log != null)
                                         {
                                             this.log.Add(log);
@@ -434,49 +428,51 @@ namespace BmsParser
                     }
                     else if (line[0] == '%')
                     {
-                        int index = line.IndexOf(' ');
+                        var index = line.IndexOf(' ');
                         if (index > 0 && line.Length > index + 1)
                         {
-                            model.Values.put(line.Substring(1, index), line.Substring(index + 1));
+                            model.Values.Put(line.Substring(1, index), line[(index + 1)..]);
                         }
                     }
                     else if (line[0] == '@')
                     {
-                        int index = line.IndexOf(' ');
+                        var index = line.IndexOf(' ');
                         if (index > 0 && line.Length > index + 1)
                         {
-                            model.Values.put(line.Substring(1, index), line.Substring(index + 1));
+                            model.Values.Put(line.Substring(1, index), line[(index + 1)..]);
                         }
                     }
                 }
 
-                model.WavList = wavlist.ToArray();
-                model.BgaList = bgalist.ToArray();
+                model.WavList = [.. wavlist];
+                model.BgaList = [.. bgalist];
 
                 Section prev = null;
-                Section[] sections = new Section[maxsec + 1];
-                for (int i = 0; i <= maxsec; i++)
+                var sections = new Section[maxsec + 1];
+                for (var i = 0; i <= maxsec; i++)
                 {
-                    sections[i] = new Section(model, prev, lines[i] != null ? lines[i] : new List<string>(), bpmtable,
+                    sections[i] = new Section(model, prev, lines[i] ?? ([]), bpmtable,
                             stoptable, scrolltable, log);
                     prev = sections[i];
                 }
 
-                SortedDictionary<Double, TimeLineCache> timelines = new SortedDictionary<Double, TimeLineCache>();
-                List<LongNote>[] lnlist = new List<LongNote>[model.Mode.Key];
-                LongNote[] lnendstatus = new LongNote[model.Mode.Key];
-                Timeline basetl = new Timeline(0, 0, model.Mode.Key);
-                basetl.                Bpm = model.Bpm;
-                timelines.put(0.0, new TimeLineCache(0.0, basetl));
-                foreach (Section section in sections)
+                SortedDictionary<double, TimeLineCache> timelines = [];
+                var lnlist = new List<LongNote>[model.Mode.Key];
+                var lnendstatus = new LongNote[model.Mode.Key];
+                var basetl = new Timeline(0, 0, model.Mode.Key)
+                {
+                    Bpm = model.Bpm
+                };
+                timelines.Put(0.0, new TimeLineCache(0.0, basetl));
+                foreach (var section in sections)
                 {
                     section.MakeTimeLines(wm, bm, timelines, lnlist, lnendstatus);
                 }
                 // Logger.getGlobal().info(
                 // "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
-                Timeline[] tl = new Timeline[timelines.Count];
-                int tlcount = 0;
-                foreach (TimeLineCache tlc in timelines.Values)
+                var tl = new Timeline[timelines.Count];
+                var tlcount = 0;
+                foreach (var tlc in timelines.Values)
                 {
                     tl[tlcount] = tlc.Timeline;
                     tlcount++;
@@ -490,12 +486,12 @@ namespace BmsParser
                     return null;
                 }
 
-                for (int i = 0; i < lnendstatus.Length; i++)
+                for (var i = 0; i < lnendstatus.Length; i++)
                 {
                     if (lnendstatus[i] != null)
                     {
                         log.Add(new DecodeLog(State.Warning, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
-                        if (lnendstatus[i].Section != Double.MinValue)
+                        if (lnendstatus[i].Section != double.MinValue)
                         {
                             timelines[lnendstatus[i].Section].Timeline.SetNote(i, null);
                         }
@@ -512,7 +508,7 @@ namespace BmsParser
                 }
                 if (tl.Length > 0)
                 {
-                    if (tl[tl.Length - 1].Time >= model.LastTime + 30000)
+                    if (tl[^1].Time >= model.LastTime + 30000)
                     {
                         log.Add(new DecodeLog(State.Warning, "最後のノート定義から30秒以上の余白があります"));
                     }
@@ -534,7 +530,7 @@ namespace BmsParser
                 {
                     selectedRandom = new int[srandoms.Count];
                     var ri = srandoms.GetEnumerator();
-                    for (int i = 0; i < selectedRandom.Length; i++)
+                    for (var i = 0; i < selectedRandom.Length; i++)
                     {
                         ri.MoveNext();
                         selectedRandom[i] = ri.Current;
@@ -562,17 +558,17 @@ namespace BmsParser
             return null;
         }
 
-        private bool matchesReserveWord(String line, String s)
+        private bool matchesReserveWord(string line, string s)
         {
-            int len = s.Length;
+            var len = s.Length;
             if (line.Length <= len)
             {
                 return false;
             }
-            for (int i = 0; i < len; i++)
+            for (var i = 0; i < len; i++)
             {
-                char c = line[i + 1];
-                char c2 = s[i];
+                var c = line[i + 1];
+                var c2 = s[i];
                 if (c != c2 && c != c2 + 32)
                 {
                     return false;
@@ -622,12 +618,12 @@ namespace BmsParser
     class CommandWord
     {
 
-        public static readonly CommandWord PLAYER = new CommandWord(nameof(PLAYER), (model, arg) =>
+        public static readonly CommandWord PLAYER = new(nameof(PLAYER), (model, arg) =>
         {
             try
             {
 
-                int player = int.Parse(arg);
+                var player = int.Parse(arg);
                 // TODO playerの許容幅は？
                 if (player >= 1 && player < 3)
                 {
@@ -645,41 +641,41 @@ namespace BmsParser
             }
             return null;
         });
-        public static readonly CommandWord GENRE = new CommandWord(nameof(GENRE), (model, arg) =>
+        public static readonly CommandWord GENRE = new(nameof(GENRE), (model, arg) =>
         {
             model.Genre = arg;
             return null;
         });
-        public static readonly CommandWord TITLE = new CommandWord(nameof(TITLE), (model, arg) =>
+        public static readonly CommandWord TITLE = new(nameof(TITLE), (model, arg) =>
         {
             model.Title = arg;
             return null;
         });
-        public static readonly CommandWord SUBTITLE = new CommandWord(nameof(SUBTITLE), (model, arg) =>
+        public static readonly CommandWord SUBTITLE = new(nameof(SUBTITLE), (model, arg) =>
         {
             model.Subtitle = arg;
             return null;
         });
-        public static readonly CommandWord ARTIST = new CommandWord(nameof(ARTIST), (model, arg) =>
+        public static readonly CommandWord ARTIST = new(nameof(ARTIST), (model, arg) =>
         {
             model.Artist = arg;
             return null;
         });
-        public static readonly CommandWord SUBARTIST = new CommandWord(nameof(SUBARTIST), (model, arg) =>
+        public static readonly CommandWord SUBARTIST = new(nameof(SUBARTIST), (model, arg) =>
         {
             model.Subartist = arg;
             return null;
         });
-        public static readonly CommandWord PLAYLEVEL = new CommandWord(nameof(PLAYLEVEL), (model, arg) =>
+        public static readonly CommandWord PLAYLEVEL = new(nameof(PLAYLEVEL), (model, arg) =>
         {
             model.PlayLevel = arg;
             return null;
         });
-        public static readonly CommandWord RANK = new CommandWord(nameof(RANK), (model, arg) =>
+        public static readonly CommandWord RANK = new(nameof(RANK), (model, arg) =>
         {
             try
             {
-                int rank = int.Parse(arg);
+                var rank = int.Parse(arg);
                 if (rank >= 0 && rank < 5)
                 {
                     model.JudgeRank = rank;
@@ -696,11 +692,11 @@ namespace BmsParser
             }
             return null;
         });
-        public static readonly CommandWord DEFEXRANK = new CommandWord(nameof(DEFEXRANK), (model, arg) =>
+        public static readonly CommandWord DEFEXRANK = new(nameof(DEFEXRANK), (model, arg) =>
         {
             try
             {
-                int rank = int.Parse(arg);
+                var rank = int.Parse(arg);
                 if (rank >= 1)
                 {
                     model.JudgeRank = rank;
@@ -717,11 +713,11 @@ namespace BmsParser
             }
             return null;
         });
-        public static readonly CommandWord TOTAL = new CommandWord(nameof(TOTAL), (model, arg) =>
+        public static readonly CommandWord TOTAL = new(nameof(TOTAL), (model, arg) =>
         {
             try
             {
-                double total = Double.Parse(arg);
+                var total = double.Parse(arg);
                 if (total > 0)
                 {
                     model.Total = total;
@@ -738,7 +734,7 @@ namespace BmsParser
             }
             return null;
         });
-        public static readonly CommandWord VOLWAV = new CommandWord(nameof(VOLWAV), (model, arg) =>
+        public static readonly CommandWord VOLWAV = new(nameof(VOLWAV), (model, arg) =>
         {
             try
             {
@@ -750,32 +746,32 @@ namespace BmsParser
             }
             return null;
         });
-        public static readonly CommandWord STAGEFILE = new CommandWord(nameof(STAGEFILE), (model, arg) =>
+        public static readonly CommandWord STAGEFILE = new(nameof(STAGEFILE), (model, arg) =>
         {
             model.StageFile = arg.Replace('\\', '/');
             return null;
         });
-        public static readonly CommandWord BACKBMP = new CommandWord(nameof(BACKBMP), (model, arg) =>
+        public static readonly CommandWord BACKBMP = new(nameof(BACKBMP), (model, arg) =>
         {
             model.BackBmp = arg.Replace('\\', '/');
             return null;
         });
-        public static readonly CommandWord PREVIEW = new CommandWord(nameof(PREVIEW), (model, arg) =>
+        public static readonly CommandWord PREVIEW = new(nameof(PREVIEW), (model, arg) =>
         {
             model.Preview = arg.Replace('\\', '/');
             return null;
         });
-        public static readonly CommandWord LNOBJ = new CommandWord(nameof(LNOBJ), (model, arg) =>
+        public static readonly CommandWord LNOBJ = new(nameof(LNOBJ), (model, arg) =>
         {
             try
             {
                 if (model.Base == 62)
                 {
-                    model.LNObj = ChartDecoder.parseInt62(arg, 0);
+                    model.LNObj = ChartDecoder.ParseInt62(arg, 0);
                 }
                 else
                 {
-                    model.LNObj = ChartDecoder.parseInt36(arg, 0);
+                    model.LNObj = ChartDecoder.ParseInt36(arg, 0);
                 }
             }
             catch (FormatException e)
@@ -784,11 +780,11 @@ namespace BmsParser
             }
             return null;
         });
-        public static readonly CommandWord LNMODE = new CommandWord(nameof(LNMODE), (model, arg) =>
+        public static readonly CommandWord LNMODE = new(nameof(LNMODE), (model, arg) =>
         {
             try
             {
-                int lnmode = int.Parse(arg);
+                var lnmode = int.Parse(arg);
                 if (lnmode < 0 || lnmode > 3)
                 {
                     return new DecodeLog(State.Warning, "#LNMODEに無効な数字が定義されています");
@@ -801,7 +797,7 @@ namespace BmsParser
             }
             return null;
         });
-        public static readonly CommandWord DIFFICULTY = new CommandWord(nameof(DIFFICULTY), (model, arg) =>
+        public static readonly CommandWord DIFFICULTY = new(nameof(DIFFICULTY), (model, arg) =>
         {
             try
             {
@@ -813,21 +809,21 @@ namespace BmsParser
             }
             return null;
         });
-        public static readonly CommandWord BANNER = new CommandWord(nameof(BANNER), (model, arg) =>
+        public static readonly CommandWord BANNER = new(nameof(BANNER), (model, arg) =>
         {
             model.Banner = arg.Replace('\\', '/');
             return null;
         });
-        public static readonly CommandWord COMMENT = new CommandWord(nameof(COMMENT), (model, arg) =>
+        public static readonly CommandWord COMMENT = new(nameof(COMMENT), (model, arg) =>
         {
             // TODO 未実装
             return null;
         });
-        public static readonly CommandWord BASE = new CommandWord(nameof(BASE), (model, arg) =>
+        public static readonly CommandWord BASE = new(nameof(BASE), (model, arg) =>
         {
             try
             {
-                int @base = int.Parse(arg);
+                var @base = int.Parse(arg);
                 if (@base != 62)
                 {
                     return new DecodeLog(State.Warning, "#BASEに無効な数字が定義されています");
@@ -843,10 +839,10 @@ namespace BmsParser
 
         public static readonly CommandWord[] values = [PLAYER, GENRE, TITLE, SUBTITLE, ARTIST, SUBARTIST, PLAYLEVEL, RANK, DEFEXRANK, TOTAL, VOLWAV, STAGEFILE, BACKBMP, PREVIEW, LNOBJ, LNMODE, DIFFICULTY, BANNER, COMMENT, BASE];
 
-        public Func<BmsModel, String, DecodeLog> function;
+        public Func<BmsModel, string, DecodeLog> function;
         public string name;
 
-        private CommandWord(string name, Func<BmsModel, String, DecodeLog> function)
+        private CommandWord(string name, Func<BmsModel, string, DecodeLog> function)
         {
             this.name = name;
             this.function = function;
@@ -861,15 +857,15 @@ namespace BmsParser
     public class OptionWord
     {
 
-        OptionWord URL = new OptionWord((model, arg) =>
+        readonly OptionWord URL = new((model, arg) =>
         {
             // TODO 未実装
             return null;
         });
 
-        public Func<BmsModel, String, DecodeLog> function;
+        public Func<BmsModel, string, DecodeLog> function;
 
-        private OptionWord(Func<BmsModel, String, DecodeLog> function)
+        private OptionWord(Func<BmsModel, string, DecodeLog> function)
         {
             this.function = function;
         }

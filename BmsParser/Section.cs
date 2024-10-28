@@ -73,7 +73,7 @@ namespace BmsParser
             }
             foreach (var line in lines)
             {
-                var channel = ChartDecoder.parseInt36(line[4], line[5]);
+                var channel = ChartDecoder.ParseInt36(line[4], line[5]);
                 switch (channel)
                 {
                     case ILLEGAL:
@@ -101,9 +101,9 @@ namespace BmsParser
                         {
                             if (@base == 62)
                             {
-                                data = ChartDecoder.parseInt36(ChartDecoder.toBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
+                                data = ChartDecoder.ParseInt36(ChartDecoder.ToBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
                             }
-                            bpmchange.put(pos, (double)(data / 36) * 16 + (data % 36));
+                            bpmchange.Put(pos, (double)(data / 36) * 16 + (data % 36));
                         });
                         break;
                     // POORアニメーション
@@ -137,7 +137,7 @@ namespace BmsParser
                         {
                             if (bpmtable.TryGetValue(data, out var bpm))
                             {
-                                bpmchange.put(pos, bpm);
+                                bpmchange.Put(pos, bpm);
                             }
                             else
                             {
@@ -151,7 +151,7 @@ namespace BmsParser
                         {
                             if (stoptable.TryGetValue(data, out var st))
                             {
-                                stop.put(pos, st);
+                                stop.Put(pos, st);
                             }
                             else
                             {
@@ -165,7 +165,7 @@ namespace BmsParser
                         {
                             if (scrolltable.TryGetValue(data, out var st))
                             {
-                                scroll.put(pos, st);
+                                scroll.Put(pos, st);
                             }
                             else
                             {
@@ -193,10 +193,10 @@ namespace BmsParser
                     var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat7K : (model.Mode == Mode.Beat10K ? Mode.Beat14K : null);
                     if (mode != null)
                     {
-                        this.processData(line, (Action<double, int>)((pos, data) =>
+                        this.processData(line, (pos, data) =>
                         {
                             model.Mode = mode;
-                        }));
+                        });
                     }
                 }
                 // 5/7KEY  => 10/14KEY			
@@ -205,10 +205,10 @@ namespace BmsParser
                     var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat10K : (model.Mode == Mode.Beat7K ? Mode.Beat14K : null);
                     if (mode != null)
                     {
-                        this.processData(line, (Action<double, int>)((pos, data) =>
+                        this.processData(line, (pos, data) =>
                         {
                             model.Mode = mode;
-                        }));
+                        });
                     }
                 }
             }
@@ -225,11 +225,11 @@ namespace BmsParser
             {
                 if (@base == 62)
                 {
-                    result[i] = ChartDecoder.parseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
+                    result[i] = ChartDecoder.ParseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
                 }
                 else
                 {
-                    result[i] = ChartDecoder.parseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
+                    result[i] = ChartDecoder.ParseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
                 }
                 if (result[i] == -1)
                 {
@@ -251,11 +251,11 @@ namespace BmsParser
             {
                 if (@base == 62)
                 {
-                    result = ChartDecoder.parseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
+                    result = ChartDecoder.ParseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
                 }
                 else
                 {
-                    result = ChartDecoder.parseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
+                    result = ChartDecoder.ParseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
                 }
                 if (result > 0)
                 {
@@ -304,11 +304,11 @@ namespace BmsParser
                 {
                     if (bgamap[poor[i]] != -2)
                     {
-                        poors[i] = new Sequence((long)(i * poortime / poor.Length), bgamap[poor[i]]);
+                        poors[i] = new Sequence(i * poortime / poor.Length, bgamap[poor[i]]);
                     }
                     else
                     {
-                        poors[i] = new Sequence((long)(i * poortime / poor.Length), -1);
+                        poors[i] = new Sequence(i * poortime / poor.Length, -1);
                     }
                 }
                 poors[^1] = new Sequence(poortime);
@@ -347,7 +347,7 @@ namespace BmsParser
 
             foreach (var line in channellines)
             {
-                var channel = ChartDecoder.parseInt36(line[4], line[5]);
+                var channel = ChartDecoder.ParseInt36(line[4], line[5]);
                 var tmpkey = 0;
                 if (channel >= P1_KEY_BASE && channel < P1_KEY_BASE + 9)
                 {
@@ -397,7 +397,7 @@ namespace BmsParser
                 switch (channel)
                 {
                     case P1_KEY_BASE:
-                        this.processData(line, (Action<double, int>)((pos, data) =>
+                        this.processData(line, (pos, data) =>
                         {
                             // normal note, lnobj
                             var tl = getTimeLine(sectionnum + rate * pos);
@@ -442,8 +442,8 @@ namespace BmsParser
                                         else if (note is LongNote ln && ln.Pair == null)
                                         {
                                             log.Add(new DecodeLog(State.Warning,
-                                                    (string)("LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
-                                                            + tl2.Section + " - " + tl.Section)));
+                                                    "LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
+                                                            + tl2.Section + " - " + tl.Section));
                                             var lnend = new LongNote(-2);
                                             tl.SetNote(key, lnend);
                                             ln.Pair = lnend;
@@ -469,7 +469,7 @@ namespace BmsParser
                             {
                                 tl.SetNote(key, new NormalNote(wavmap[data]));
                             }
-                        }));
+                        });
                         break;
 
                     case P1_INVISIBLE_KEY_BASE:
@@ -479,7 +479,7 @@ namespace BmsParser
                         });
                         break;
                     case P1_LONG_KEY_BASE:
-                        this.processData(line, (Action<double, int>)((pos, data) =>
+                        this.processData(line, (pos, data) =>
                         {
                             // long note
                             var tl = getTimeLine(sectionnum + rate * pos);
@@ -499,9 +499,8 @@ namespace BmsParser
 
                             if (!insideln)
                             {
-                                var keyLN = startln[key];
                                 // LN処理
-                                if (keyLN == null)
+                                if (startln[key] == null)
                                 {
                                     if (tl.ExistNote(key))
                                     {
@@ -517,7 +516,7 @@ namespace BmsParser
                                     tl.SetNote(key, ln);
                                     startln[key] = ln;
                                 }
-                                else if (keyLN.Section == double.MinValue)
+                                else if (startln[key]!.Section == double.MinValue)
                                 {
                                     startln[key] = null;
                                 }
@@ -532,11 +531,11 @@ namespace BmsParser
                                         }
 
                                         var tl2 = e.Value.Timeline;
-                                        if (tl2.Section == keyLN.Section)
+                                        if (tl2.Section == startln[key]!.Section)
                                         {
-                                            Note note = keyLN;
+                                            Note note = startln[key]!;
                                             ((LongNote)note).Type = lnmode;
-                                            var noteend = new LongNote(keyLN.Wav != wavmap[data] ? wavmap[data] : -2);
+                                            var noteend = new LongNote(startln[key]!.Wav != wavmap[data] ? wavmap[data] : -2);
                                             tl.SetNote(key, noteend);
                                             ((LongNote)note).Pair = noteend;
                                             if (lnlist[key] == null)
@@ -564,8 +563,7 @@ namespace BmsParser
                             }
                             else
                             {
-                                var keyLN = startln[key];
-                                if (keyLN == null)
+                                if (startln[key] == null)
                                 {
                                     var ln = new LongNote(wavmap[data])
                                     {
@@ -577,21 +575,21 @@ namespace BmsParser
                                 }
                                 else
                                 {
-                                    if (keyLN.Section != double.MinValue)
+                                    if (startln[key]!.Section != double.MinValue)
                                     {
-                                        tlcache[keyLN.Section].Timeline.SetNote(key, null);
+                                        tlcache[startln[key]!.Section].Timeline.SetNote(key, null);
                                     }
                                     startln[key] = null;
                                     log.Add(new DecodeLog(State.Warning, "LN内にLN終端ノートを定義しようとしています : "
                                             + (key + 1) + " - Section : " + tl.Section + " - Time(ms):" + tl.Time));
                                 }
                             }
-                        }));
+                        });
                         break;
 
                     case P1_MINE_KEY_BASE:
                         // mine note
-                        this.processData(line, (Action<double, int>)((pos, data) =>
+                        this.processData(line, (pos, data) =>
                         {
                             var tl = getTimeLine(sectionnum + rate * pos);
                             var insideln = tl.ExistNote(key);
@@ -612,7 +610,7 @@ namespace BmsParser
                             {
                                 if (@base == 62)
                                 {
-                                    data = ChartDecoder.parseInt36(ChartDecoder.toBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
+                                    data = ChartDecoder.ParseInt36(ChartDecoder.ToBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
                                 }
                                 tl.SetNote(key, new MineNote(wavmap[0], data));
                             }
@@ -621,7 +619,7 @@ namespace BmsParser
                                 log.Add(new DecodeLog(State.Warning, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
                                         + tl.Time));
                             }
-                        }));
+                        });
                         break;
                     case LANE_AUTOPLAY:
                         // BGレーン
@@ -661,7 +659,7 @@ namespace BmsParser
                     Bpm = bpm,
                     Scroll = scroll
                 };
-                tlcache.put(section, new TimeLineCache(time, tl));
+                tlcache.Put(section, new TimeLineCache(time, tl));
                 return tl;
             }
         }

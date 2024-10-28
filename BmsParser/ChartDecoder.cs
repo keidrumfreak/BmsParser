@@ -16,7 +16,7 @@ namespace BmsParser
     {
         protected LNType lntype;
 
-        protected List<DecodeLog> log = new List<DecodeLog>();
+        protected List<DecodeLog> log = [];
 
         /**
          * パスで指定したファイルをBMSModelに変換する
@@ -25,7 +25,7 @@ namespace BmsParser
          *            譜面ファイル
          * @return 変換したBMSModel。失敗した場合はnull
          */
-        public BmsModel decode(FileInfo file)
+        public BmsModel? Decode(FileInfo file)
         {
             return Decode(file.FullName);
         }
@@ -37,7 +37,7 @@ namespace BmsParser
          *            譜面ファイルのパス
          * @return 変換したBMSModel。失敗した場合はnull
          */
-        public BmsModel Decode(string path)
+        public BmsModel? Decode(string path)
         {
             return Decode(new ChartInformation(path, lntype, null));
         }
@@ -47,12 +47,12 @@ namespace BmsParser
          * 
          * @return デコードログ
          */
-        public DecodeLog[] getDecodeLog()
+        public DecodeLog[] GetDecodeLog()
         {
-            return log.ToArray();
+            return [.. log];
         }
 
-        public abstract BmsModel Decode(ChartInformation info);
+        public abstract BmsModel? Decode(ChartInformation info);
 
         /**
          * パスで指定したファイルに対応するChartDecoderを取得する
@@ -61,9 +61,9 @@ namespace BmsParser
          *            譜面ファイルのパス
          * @return 対応するChartDecoder。存在しない場合はnull
          */
-        public static ChartDecoder getDecoder(string p)
+        public static ChartDecoder? GetDecoder(string p)
         {
-            String s = Path.GetFileName(p).ToLower();
+            var s = Path.GetFileName(p).ToLower();
             if (s.EndsWith(".bms") || s.EndsWith(".bme") || s.EndsWith(".bml") || s.EndsWith(".pms"))
             {
                 return new BmsDecoder(LNType.LongNote);
@@ -75,10 +75,10 @@ namespace BmsParser
             return null;
         }
 
-        public static int parseInt36(String s, int index)
+        public static int ParseInt36(string s, int index)
         {
 
-            int result = parseInt36(s[index], s[index + 1]);
+            var result = ParseInt36(s[index], s[index + 1]);
             if (result == -1)
             {
                 throw new FormatException();
@@ -86,9 +86,9 @@ namespace BmsParser
             return result;
         }
 
-        public static int parseInt36(char c1, char c2)
+        public static int ParseInt36(char c1, char c2)
         {
-            int result = 0;
+            var result = 0;
             if (c1 >= '0' && c1 <= '9')
             {
                 result = (c1 - '0') * 36;
@@ -126,10 +126,10 @@ namespace BmsParser
             return result;
         }
 
-        public static int parseInt62(String s, int index)
+        public static int ParseInt62(string s, int index)
         {
 
-            int result = parseInt62(s[index], s[index + 1]);
+            var result = ParseInt62(s[index], s[index + 1]);
             if (result == -1)
             {
                 throw new FormatException();
@@ -137,9 +137,9 @@ namespace BmsParser
             return result;
         }
 
-        public static int parseInt62(char c1, char c2)
+        public static int ParseInt62(char c1, char c2)
         {
-            int result = 0;
+            var result = 0;
             if (c1 >= '0' && c1 <= '9')
             {
                 result = (c1 - '0') * 62;
@@ -177,12 +177,12 @@ namespace BmsParser
             return result;
         }
 
-        public static String toBase62(int @decimal)
+        public static string ToBase62(int @decimal)
         {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 2; i++)
+            var sb = new StringBuilder();
+            for (var i = 0; i < 2; i++)
             {
-                int mod = (int)(@decimal % 62);
+                var mod = @decimal % 62;
                 if (mod < 10)
                 {
                     sb.Append(mod);
@@ -199,11 +199,11 @@ namespace BmsParser
                 }
                 else
                 {
-                    sb.Append("0");
+                    sb.Append('0');
                 }
-                @decimal = (int)(@decimal / 62);
+                @decimal = @decimal / 62;
             }
-            return new String(sb.ToString().Reverse().ToArray());
+            return new string(sb.ToString().Reverse().ToArray());
         }
 
         protected void printLog(string path)

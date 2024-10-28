@@ -20,7 +20,7 @@ namespace BmsParser
                 time = value;
                 foreach(var note in notes.Where(n => n != null))
                 {
-                    note.MicroTime = value;
+                    note!.MicroTime = value;
                 }
                 foreach (var note in hiddenNotes.Where(n => n != null))
                 {
@@ -48,7 +48,7 @@ namespace BmsParser
                 section = value;
                 foreach (var note in notes.Where(n => n != null))
                 {
-                    note.Section = value;
+                    note!.Section = value;
                 }
                 foreach (var note in hiddenNotes.Where(n => n != null))
                 {
@@ -76,7 +76,7 @@ namespace BmsParser
             set
             {
                 if (notes.Length == value) return;
-                var newNotes = new Note[value];
+                var newNotes = new Note?[value];
                 var newHiddenNotes = new Note[value];
                 for (var i = 0; i < value; i++)
                 {
