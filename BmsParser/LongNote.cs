@@ -48,7 +48,7 @@ namespace BmsParser
                 value.pair = this;
                 pair = value;
 
-                pair.IsEnd = pair.getSection() > getSection();
+                pair.IsEnd = pair.Section > Section;
                 IsEnd = !pair.IsEnd;
                 Type = (Type != LNMode.Undefined ? Type : pair.Type);
                 pair.Type = Type;
@@ -62,14 +62,14 @@ namespace BmsParser
 
         public LongNote(int wav)
         {
-            this.setWav(wav);
+            Wav = wav;
         }
 
-        public LongNote(int wav, long starttime, long duration)
+        public LongNote(int wav, long start, long duration)
         {
-            this.setWav(wav);
-            this.setMicroStarttime(starttime);
-            this.setMicroDuration(duration);
+            Wav = wav;
+            MicroStarttime = start;
+            MicroDuration = duration;
         }
     }
 }

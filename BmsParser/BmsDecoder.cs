@@ -496,9 +496,9 @@ namespace BmsParser
                     if (lnendstatus[i] != null)
                     {
                         log.Add(new DecodeLog(WARNING, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
-                        if (lnendstatus[i].getSection() != Double.MinValue)
+                        if (lnendstatus[i].Section != Double.MinValue)
                         {
-                            timelines[lnendstatus[i].getSection()].timeline.setNote(i, null);
+                            timelines[lnendstatus[i].Section].timeline.setNote(i, null);
                         }
                     }
                 }

@@ -289,11 +289,11 @@ namespace BmsParser
                             double section = (n.Y / resolution);
                             foreach (LongNote ln in lnlist[key])
                             {
-                                if (section == ln.Pair.getSection())
+                                if (section == ln.Pair.Section)
                                 {
-                                    ln.Pair.setWav(id);
-                                    ln.Pair.setMicroStarttime(starttime);
-                                    ln.Pair.setMicroDuration(duration);
+                                    ln.Pair.Wav = id;
+                                    ln.Pair.MicroStarttime = starttime;
+                                    ln.Pair.MicroDuration = duration;
                                     assigned = true;
                                     break;
                                 }
@@ -312,7 +312,7 @@ namespace BmsParser
                             double section = (n.Y / resolution);
                             foreach (LongNote ln in lnlist[key])
                             {
-                                if (ln.getSection() < section && section <= ln.Pair.getSection())
+                                if (ln.Section < section && section <= ln.Pair.Section)
                                 {
                                     insideln = true;
                                     break;
@@ -339,7 +339,7 @@ namespace BmsParser
                                     var en = tl.getNote(key);
                                     if (en is LongNote && end.getNote(key) == ((LongNote)en).Pair)
                                     {
-                                        en.addLayeredNote(ln);
+                                        en.AddLayeredNote(ln);
                                     }
                                     else
                                     {
@@ -401,7 +401,7 @@ namespace BmsParser
                                 {
                                     if (tl.getNote(key) is NormalNote)
                                     {
-                                        tl.getNote(key).addLayeredNote(new NormalNote(id, starttime, duration));
+                                        tl.getNote(key).AddLayeredNote(new NormalNote(id, starttime, duration));
                                     }
                                     else
                                     {
@@ -459,7 +459,7 @@ namespace BmsParser
                             double section = (n.Y / resolution);
                             foreach (LongNote ln in lnlist[key])
                             {
-                                if (ln.getSection() < section && section <= ln.Pair.getSection())
+                                if (ln.Section < section && section <= ln.Pair.Section)
                                 {
                                     insideln = true;
                                     break;

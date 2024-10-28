@@ -33,7 +33,7 @@ namespace BmsParser
         /**
          * タイムライン上に配置されているBGMノート
          */
-        private List<Note> bgnotes = Note.EMPTYARRAY;
+        private List<Note> bgnotes = [];
         /**
          * 小節線の有無
          */
@@ -94,19 +94,19 @@ namespace BmsParser
             {
                 if (n != null)
                 {
-                    n.setMicroTime(time);
+                    n.                    MicroTime = time;
                 }
             }
             foreach (Note n in hiddennotes)
             {
                 if (n != null)
                 {
-                    n.setMicroTime(time);
+                    n.                    MicroTime = time;
                 }
             }
             foreach (Note n in bgnotes)
             {
-                n.setMicroTime(time);
+                n.                MicroTime = time;
             }
         }
 
@@ -204,8 +204,8 @@ namespace BmsParser
             {
                 return;
             }
-            note.setSection(section);
-            note.setMicroTime(time);
+            note.Section = section;
+            note.            MicroTime = time;
         }
 
         public void setHiddenNote(int lane, Note note)
@@ -215,8 +215,8 @@ namespace BmsParser
             {
                 return;
             }
-            note.setSection(section);
-            note.setMicroTime(time);
+            note.Section = section;
+            note.            MicroTime = time;
         }
 
         public bool existHiddenNote()
@@ -242,8 +242,8 @@ namespace BmsParser
             {
                 return;
             }
-            note.setSection(section);
-            note.setMicroTime(time);
+            note.Section = section;
+            note.            MicroTime = time;
             bgnotes.Add(note);
         }
 
@@ -334,19 +334,19 @@ namespace BmsParser
             {
                 if (n != null)
                 {
-                    n.setSection(section);
+                    n.Section = section;
                 }
             }
             foreach (Note n in hiddennotes)
             {
                 if (n != null)
                 {
-                    n.setSection(section);
+                    n.Section = section;
                 }
             }
             foreach (Note n in bgnotes)
             {
-                n.setSection(section);
+                n.Section = section;
             }
             this.section = section;
         }

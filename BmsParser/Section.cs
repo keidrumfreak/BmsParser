@@ -429,7 +429,7 @@ namespace BmsParser
                                         if (note is NormalNote)
                                         {
                                             // LNOBJの直前のノートをLNに差し替える
-                                            LongNote ln = new LongNote(note.getWav());
+                                            LongNote ln = new LongNote(note.Wav);
                                             ln.Type = lnmode;
                                             tl2.setNote(key, ln);
                                             LongNote lnend = new LongNote(-2);
@@ -483,7 +483,7 @@ namespace BmsParser
                         });
                         break;
                     case P1_LONG_KEY_BASE:
-                        this.processData(line, (pos, data) =>
+                        this.processData(line, (Action<double, int>)((pos, data) =>
                         {
                             // long note
                             TimeLine tl = getTimeLine(sectionnum + rate * pos);
@@ -493,7 +493,7 @@ namespace BmsParser
                                 double section = tl.getSection();
                                 foreach (LongNote ln in lnlist[key])
                                 {
-                                    if (ln.getSection() <= section && section <= ln.Pair.getSection())
+                                    if (ln.Section <= section && section <= ln.Pair.Section)
                                     {
                                         insideln = true;
                                         break;
@@ -511,7 +511,7 @@ namespace BmsParser
                                         Note note = tl.getNote(key);
                                         log.Add(new DecodeLog(WARNING, "LN開始位置に通常ノートが存在します。レーン: "
                                                 + (key + 1) + " - Time(ms):" + tl.getTime()));
-                                        if (note is NormalNote && note.getWav() != wavmap[data])
+                                        if (note is NormalNote && note.Wav != wavmap[data])
                                         {
                                             tl.addBackGroundNote(note);
                                         }
@@ -520,7 +520,7 @@ namespace BmsParser
                                     tl.setNote(key, ln);
                                     startln[key] = ln;
                                 }
-                                else if (startln[key].getSection() == Double.MinValue)
+                                else if (startln[(int)key].Section == double.MinValue)
                                 {
                                     startln[key] = null;
                                 }
@@ -535,11 +535,11 @@ namespace BmsParser
                                         }
 
                                         TimeLine tl2 = e.Value.timeline;
-                                        if (tl2.getSection() == startln[key].getSection())
+                                        if (tl2.getSection() == startln[(int)key].Section)
                                         {
                                             Note note = startln[key];
                                             ((LongNote)note).Type = lnmode;
-                                            LongNote noteend = new LongNote(startln[key].getWav() != wavmap[data] ? wavmap[data] : -2);
+                                            LongNote noteend = new LongNote(startln[key].Wav != wavmap[data] ? wavmap[data] : -2);
                                             tl.setNote(key, noteend);
                                             ((LongNote)note).Pair = noteend;
                                             if (lnlist[key] == null)
@@ -570,28 +570,28 @@ namespace BmsParser
                                 if (startln[key] == null)
                                 {
                                     LongNote ln = new LongNote(wavmap[data]);
-                                    ln.setSection(Double.MinValue);
+                                    ln.Section = double.MinValue;
                                     startln[key] = ln;
                                     log.Add(new DecodeLog(WARNING, "LN内にLN開始ノートを定義しようとしています : "
                                             + (key + 1) + " - Section : " + tl.getSection() + " - Time(ms):" + tl.getTime()));
                                 }
                                 else
                                 {
-                                    if (startln[key].getSection() != Double.MinValue)
+                                    if (startln[(int)key].Section != double.MinValue)
                                     {
-                                        tlcache[startln[key].getSection()].timeline.setNote(key, null);
+                                        tlcache[startln[(int)key].Section].timeline.setNote(key, null);
                                     }
                                     startln[key] = null;
                                     log.Add(new DecodeLog(WARNING, "LN内にLN終端ノートを定義しようとしています : "
                                             + (key + 1) + " - Section : " + tl.getSection() + " - Time(ms):" + tl.getTime()));
                                 }
                             }
-                        });
+                        }));
                         break;
 
                     case P1_MINE_KEY_BASE:
                         // mine note
-                        this.processData(line, (pos, data) =>
+                        this.processData(line, (Action<double, int>)((pos, data) =>
                         {
                             TimeLine tl = getTimeLine(sectionnum + rate * pos);
                             bool insideln = tl.existNote(key);
@@ -600,7 +600,7 @@ namespace BmsParser
                                 double section = tl.getSection();
                                 foreach (LongNote ln in lnlist[key])
                                 {
-                                    if (ln.getSection() <= section && section <= ln.Pair.getSection())
+                                    if (ln.Section <= section && section <= ln.Pair.Section)
                                     {
                                         insideln = true;
                                         break;
@@ -621,7 +621,7 @@ namespace BmsParser
                                 log.Add(new DecodeLog(WARNING, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
                                         + tl.getTime()));
                             }
-                        });
+                        }));
                         break;
                     case LANE_AUTOPLAY:
                         // BGレーン

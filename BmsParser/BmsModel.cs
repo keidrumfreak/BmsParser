@@ -306,7 +306,7 @@ namespace BmsParser
                         if (!ln.IsEnd)
                         {
                             char[] lnchars = ['l', 'L', 'C', 'H'];
-                            tlsb.Append(lnchars[(int)ln.Type] + ln.getMilliDuration());
+                            tlsb.Append(lnchars[(int)ln.Type] + ln.MilliDuration);
                             write = true;
                         }
                     }

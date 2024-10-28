@@ -1,168 +1,77 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+﻿using System.Collections.Generic;
 
 namespace BmsParser
 {
     public class Note
     {
-        public static readonly List<Note> EMPTYARRAY = new();
-	/**
-	 * ノートが配置されている小節
-	 */
-	private double section;
-        /**
-         * ノートが配置されている時間(us)
-         */
-        private long time;
+        /// <summary>
+        /// アサインされている音源ID
+        /// </summary>
+        public int Wav { get; set; }
 
-        /**
-         * アサインされている 音源ID
-         */
-        private int wav;
-        /**
-         * 音源IDの音の開始時間(us)
-         */
-        private long start;
-        /**
-         * 音源IDの音を鳴らす長さ(us)
-         */
-        private long duration;
-        /**
-         * ノーツの状態
-         */
-        private int state;
-        /**
-         * ノーツの演奏時間
-         */
-        private long playtime;
-        /**
-         * 同時演奏されるノート
-         */
-        private List<Note> layerednotes = EMPTYARRAY;
+        /// <summary>
+        /// ノーツの状態
+        /// </summary>
+        public int State { get; set; }
 
-        public int getWav()
+        public long MilliStarttime => MicroStarttime / 1000;
+
+        /// <summary>
+        /// 音源IDの音の開始時間(us)
+        /// </summary>
+        public long MicroStarttime { get; set; }
+
+        public long MilliDuration => MicroDuration / 1000;
+
+        /// <summary>
+        /// 音源IDの音を鳴らす流さ(us)
+        /// </summary>
+        public long MicroDuration { get; set; }
+
+        public int PlayTime
         {
-            return wav;
+            get => (int)MicroPlayTime / 1000;
+            set => MicroPlayTime = value * 1000;
         }
 
-        public void setWav(int wav)
-        {
-            this.wav = wav;
-        }
+        public long MilliPlayTime => MicroPlayTime / 1000;
 
-        public int getState()
-        {
-            return state;
-        }
+        /// <summary>
+        /// ノーツの演奏時間
+        /// </summary>
+        public long MicroPlayTime { get; set; }
 
-        public void setState(int state)
-        {
-            this.state = state;
-        }
+        /// <summary>
+        /// ノートが配置されている小節
+        /// </summary>
+        public double Section { get; set; }
 
-        public long getMilliStarttime()
-        {
-            return start / 1000;
-        }
+        public int Time => (int)MicroTime / 1000;
 
-        public long getMicroStarttime()
-        {
-            return start;
-        }
+        public long MilliTime => MicroTime / 1000;
 
-        public void setMicroStarttime(long start)
-        {
-            this.start = start;
-        }
+        /// <summary>
+        /// ノートが配置されている時間(us)
+        /// </summary>
+        public long MicroTime { get; set; }
 
-        public long getMilliDuration()
-        {
-            return duration / 1000;
-        }
+        private List<Note> layeredNotes;
+        /// <summary>
+        /// 同時演奏されるノート
+        /// </summary>
+        public IEnumerable<Note> LayeredNotes => layeredNotes ?? [];
 
-        public long getMicroDuration()
+        public void AddLayeredNote(Note note)
         {
-            return duration;
-        }
-
-        public void setMicroDuration(long duration)
-        {
-            this.duration = duration;
-        }
-
-        public int getPlayTime()
-        {
-            return (int)(playtime / 1000);
-        }
-
-        public long getMilliPlayTime()
-        {
-            return playtime / 1000;
-        }
-
-        public long getMicroPlayTime()
-        {
-            return playtime;
-        }
-
-        public void setPlayTime(int playtime)
-        {
-            this.playtime = playtime * 1000;
-        }
-
-        public void setMicroPlayTime(long playtime)
-        {
-            this.playtime = playtime;
-        }
-
-        public double getSection()
-        {
-            return section;
-        }
-
-        public void setSection(double section)
-        {
-            this.section = section;
-        }
-
-        public int getTime()
-        {
-            return (int)(time / 1000);
-        }
-
-        public long getMilliTime()
-        {
-            return time / 1000;
-        }
-
-        public long getMicroTime()
-        {
-            return time;
-        }
-
-        public void setMicroTime(long time)
-        {
-            this.time = time;
-        }
-
-        public void addLayeredNote(Note n)
-        {
-            if (n == null)
-            {
+            if (note == null)
                 return;
-            }
-            n.setSection(section);
-            n.setMicroTime(time);
-            layerednotes.Add(n);
-        }
 
-        public Note[] getLayeredNotes()
-        {
-            return layerednotes.ToArray();
+            if (layeredNotes == default)
+                layeredNotes = [];
+
+            note.Section = Section;
+            note.MicroTime = MicroTime;
+            layeredNotes.Add(note);
         }
     }
 }

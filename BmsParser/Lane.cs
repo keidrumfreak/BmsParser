@@ -72,15 +72,15 @@ namespace BmsParser
 
         public void mark(int time)
         {
-            for (; notebasepos < notes.Length - 1 && notes[notebasepos + 1].getTime() < time; notebasepos++)
+            for (; notebasepos < notes.Length - 1 && notes[notebasepos + 1].Time < time; notebasepos++)
                 ;
-            for (; notebasepos > 0 && notes[notebasepos].getTime() > time; notebasepos--)
+            for (; notebasepos > 0 && notes[notebasepos].Time > time; notebasepos--)
                 ;
             noteseekpos = notebasepos;
             for (; hiddenbasepos < hiddens.Length - 1
-                    && hiddens[hiddenbasepos + 1].getTime() < time; hiddenbasepos++)
+                    && hiddens[hiddenbasepos + 1].Time < time; hiddenbasepos++)
                 ;
-            for (; hiddenbasepos > 0 && hiddens[hiddenbasepos].getTime() > time; hiddenbasepos--)
+            for (; hiddenbasepos > 0 && hiddens[hiddenbasepos].Time > time; hiddenbasepos--)
                 ;
             hiddenseekpos = hiddenbasepos;
         }

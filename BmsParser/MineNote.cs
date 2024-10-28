@@ -18,7 +18,7 @@ namespace BmsParser
 
         public MineNote(int wav, double damage)
         {
-            this.setWav(wav);
+            Wav = wav;
             this.setDamage(damage);
         }
 
