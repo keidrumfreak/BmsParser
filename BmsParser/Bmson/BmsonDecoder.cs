@@ -5,7 +5,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using static BmsParser.DecodeLog.State;
 using static BmsParser.Layer;
 
 namespace BmsParser
@@ -47,7 +46,7 @@ namespace BmsParser
             }
             catch (IOException e)
             {
-                log.Add(new DecodeLog(DecodeLog.State.ERROR, "BMSファイルが見つかりません"));
+                log.Add(new DecodeLog(State.Error, "BMSファイルが見つかりません"));
                 //Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
             }
             return null;
@@ -99,12 +98,12 @@ namespace BmsParser
 
             if (bmson.Info.JudgeRank < 0)
             {
-                log.Add(new DecodeLog(WARNING, "judge_rankが0以下です。judge_rank = " + bmson.Info.JudgeRank));
+                log.Add(new DecodeLog(State.Warning, "judge_rankが0以下です。judge_rank = " + bmson.Info.JudgeRank));
             }
             else if (bmson.Info.JudgeRank < 5)
             {
                 model.JudgeRank = (int)bmson.Info.JudgeRank;
-                log.Add(new DecodeLog(WARNING, "judge_rankの定義が仕様通りでない可能性があります。judge_rank = " + bmson.Info.JudgeRank));
+                log.Add(new DecodeLog(State.Warning, "judge_rankの定義が仕様通りでない可能性があります。judge_rank = " + bmson.Info.JudgeRank));
                 model.JudgeRankType = JudgeRankType.BmsRank;
             }
             else
@@ -120,7 +119,7 @@ namespace BmsParser
             }
             else
             {
-                log.Add(new DecodeLog(WARNING, "totalが0以下です。total = " + bmson.Info.Total));
+                log.Add(new DecodeLog(State.Warning, "totalが0以下です。total = " + bmson.Info.Total));
             }
 
             model.Bpm = bmson.Info.InitBpm;
@@ -132,7 +131,7 @@ namespace BmsParser
             }
             else
             {
-                log.Add(new DecodeLog(WARNING, "非対応のmode_hintです。mode_hint = " + bmson.Info.ModeHint));
+                log.Add(new DecodeLog(State.Warning, "非対応のmode_hintです。mode_hint = " + bmson.Info.ModeHint));
                 model.Mode = Mode.Beat7K;
             }
             if (bmson.Info.LNType > 0 && bmson.Info.LNType <= 3)
@@ -209,7 +208,7 @@ namespace BmsParser
                     }
                     else
                     {
-                        log.Add(new DecodeLog(WARNING,
+                        log.Add(new DecodeLog(State.Warning,
                                 "negative BPMはサポートされていません - y : " + bmson.BpmEvents[bpmpos].Y + " bpm : " + bmson.BpmEvents[bpmpos].Bpm));
                     }
                     bpmpos++;
@@ -224,7 +223,7 @@ namespace BmsParser
                     }
                     else
                     {
-                        log.Add(new DecodeLog(WARNING,
+                        log.Add(new DecodeLog(State.Warning,
                                 "negative STOPはサポートされていません - y : " + bmson.StopEvents[stoppos].Y + " bpm : " + bmson.StopEvents[stoppos].Duration));
                     }
                     stoppos++;
@@ -318,7 +317,7 @@ namespace BmsParser
 
                         if (insideln)
                         {
-                            log.Add(new DecodeLog(WARNING,
+                            log.Add(new DecodeLog(State.Warning,
                                     "LN内にノートを定義しています - x :  " + n.X + " y : " + n.Y));
                             tl.AddBackGroundNote(new NormalNote(id, starttime, duration));
                         }
@@ -339,7 +338,7 @@ namespace BmsParser
                                     }
                                     else
                                     {
-                                        log.Add(new DecodeLog(WARNING,
+                                        log.Add(new DecodeLog(State.Warning,
                                                 "同一の位置にノートが複数定義されています - x :  " + n.X + " y : " + n.Y));
                                     }
                                 }
@@ -356,7 +355,7 @@ namespace BmsParser
                                     }
                                     if (existNote)
                                     {
-                                        log.Add(new DecodeLog(WARNING,
+                                        log.Add(new DecodeLog(State.Warning,
                                                 "LN内にノートを定義しています - x :  " + n.X + " y : " + n.Y));
                                         tl.AddBackGroundNote(new NormalNote(id, starttime, duration));
                                     }
@@ -401,7 +400,7 @@ namespace BmsParser
                                     }
                                     else
                                     {
-                                        log.Add(new DecodeLog(WARNING,
+                                        log.Add(new DecodeLog(State.Warning,
                                                 "同一の位置にノートが複数定義されています - x :  " + n.X + " y : " + n.Y));
                                     }
                                 }
@@ -465,12 +464,12 @@ namespace BmsParser
 
                         if (insideln)
                         {
-                            log.Add(new DecodeLog(WARNING,
+                            log.Add(new DecodeLog(State.Warning,
                                     "LN内に地雷ノートを定義しています - x :  " + n.X + " y : " + n.Y));
                         }
                         else if (tl.ExistNote(key))
                         {
-                            log.Add(new DecodeLog(WARNING,
+                            log.Add(new DecodeLog(State.Warning,
                                     "地雷ノートを定義している位置に通常ノートが存在します - x :  " + n.X + " y : " + n.Y));
                         }
                         else

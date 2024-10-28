@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using BmsParser;
-using static BmsParser.DecodeLog.State;
 using static BmsParser.Layer;
 using static BmsParser.ChartDecoder;
 
@@ -78,7 +77,7 @@ namespace BmsParser
                 switch (channel)
                 {
                     case ILLEGAL:
-                        log.Add(new DecodeLog(WARNING, "チャンネル定義が無効です : " + line));
+                        log.Add(new DecodeLog(State.Warning, "チャンネル定義が無効です : " + line));
                         break;
                     // BGレーン
                     case LANE_AUTOPLAY:
@@ -97,7 +96,7 @@ namespace BmsParser
                         }
                         catch (FormatException e)
                         {
-                            log.Add(new DecodeLog(WARNING, "小節の拡大率が不正です : " + line));
+                            log.Add(new DecodeLog(State.Warning, "小節の拡大率が不正です : " + line));
                         }
                         break;
                     // BPM変化
@@ -147,7 +146,7 @@ namespace BmsParser
                             }
                             else
                             {
-                                log.Add(new DecodeLog(WARNING, "未定義のBPM変化を参照しています : " + data));
+                                log.Add(new DecodeLog(State.Warning, "未定義のBPM変化を参照しています : " + data));
                             }
                         });
                         break;
@@ -162,7 +161,7 @@ namespace BmsParser
                             }
                             else
                             {
-                                log.Add(new DecodeLog(WARNING, "未定義のSTOPを参照しています : " + data));
+                                log.Add(new DecodeLog(State.Warning, "未定義のSTOPを参照しています : " + data));
                             }
                         });
                         break;
@@ -177,7 +176,7 @@ namespace BmsParser
                             }
                             else
                             {
-                                log.Add(new DecodeLog(WARNING, "未定義のSCROLLを参照しています : " + data));
+                                log.Add(new DecodeLog(State.Warning, "未定義のSCROLLを参照しています : " + data));
                             }
                         });
                         break;
@@ -241,7 +240,7 @@ namespace BmsParser
                 }
                 if (result[i] == -1)
                 {
-                    log.Add(new DecodeLog(WARNING, model.Title + ":チャンネル定義中の不正な値:" + line));
+                    log.Add(new DecodeLog(State.Warning, model.Title + ":チャンネル定義中の不正な値:" + line));
                     result[i] = 0;
                 }
             }
@@ -271,7 +270,7 @@ namespace BmsParser
                 }
                 else if (result == -1)
                 {
-                    log.Add(new DecodeLog(WARNING, model.Title + ":チャンネル定義中の不正な値:" + line));
+                    log.Add(new DecodeLog(State.Warning, model.Title + ":チャンネル定義中の不正な値:" + line));
                 }
             }
         }
@@ -409,7 +408,7 @@ namespace BmsParser
                             Timeline tl = getTimeLine(sectionnum + rate * pos);
                             if (tl.ExistNote(key))
                             {
-                                log.Add(new DecodeLog(WARNING, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
+                                log.Add(new DecodeLog(State.Warning, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
                                         + tl.Time));
                             }
                             if (data == lnobj)
@@ -445,7 +444,7 @@ namespace BmsParser
                                         }
                                         else if (note is LongNote && ((LongNote)note).Pair == null)
                                         {
-                                            log.Add(new DecodeLog(WARNING,
+                                            log.Add(new DecodeLog(State.Warning,
                                                     (string)("LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
                                                             + tl2.Section + " - " + tl.Section)));
                                             LongNote lnend = new LongNote(-2);
@@ -462,7 +461,7 @@ namespace BmsParser
                                         }
                                         else
                                         {
-                                            log.Add(new DecodeLog(WARNING, "LNオブジェクトの対応が取れません。レーン: " + key
+                                            log.Add(new DecodeLog(State.Warning, "LNオブジェクトの対応が取れません。レーン: " + key
                                                     + " - Time(ms):" + tl2.Time));
                                             break;
                                         }
@@ -509,7 +508,7 @@ namespace BmsParser
                                     if (tl.ExistNote(key))
                                     {
                                         Note note = tl.GetNote(key);
-                                        log.Add(new DecodeLog(WARNING, "LN開始位置に通常ノートが存在します。レーン: "
+                                        log.Add(new DecodeLog(State.Warning, "LN開始位置に通常ノートが存在します。レーン: "
                                                 + (key + 1) + " - Time(ms):" + tl.Time));
                                         if (note is NormalNote && note.Wav != wavmap[data])
                                         {
@@ -554,7 +553,7 @@ namespace BmsParser
                                         else if (tl2.ExistNote(key))
                                         {
                                             Note note = tl2.GetNote(key);
-                                            log.Add(new DecodeLog(WARNING, "LN内に通常ノートが存在します。レーン: "
+                                            log.Add(new DecodeLog(State.Warning, "LN内に通常ノートが存在します。レーン: "
                                                     + (key + 1) + " - Time(ms):" + tl2.Time));
                                             tl2.SetNote(key, null);
                                             if (note is NormalNote)
@@ -572,7 +571,7 @@ namespace BmsParser
                                     LongNote ln = new LongNote(wavmap[data]);
                                     ln.Section = double.MinValue;
                                     startln[key] = ln;
-                                    log.Add(new DecodeLog(WARNING, "LN内にLN開始ノートを定義しようとしています : "
+                                    log.Add(new DecodeLog(State.Warning, "LN内にLN開始ノートを定義しようとしています : "
                                             + (key + 1) + " - Section : " + tl.Section + " - Time(ms):" + tl.Time));
                                 }
                                 else
@@ -582,7 +581,7 @@ namespace BmsParser
                                         tlcache[startln[(int)key].Section].timeline.SetNote(key, null);
                                     }
                                     startln[key] = null;
-                                    log.Add(new DecodeLog(WARNING, "LN内にLN終端ノートを定義しようとしています : "
+                                    log.Add(new DecodeLog(State.Warning, "LN内にLN終端ノートを定義しようとしています : "
                                             + (key + 1) + " - Section : " + tl.Section + " - Time(ms):" + tl.Time));
                                 }
                             }
@@ -618,7 +617,7 @@ namespace BmsParser
                             }
                             else
                             {
-                                log.Add(new DecodeLog(WARNING, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
+                                log.Add(new DecodeLog(State.Warning, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
                                         + tl.Time));
                             }
                         }));

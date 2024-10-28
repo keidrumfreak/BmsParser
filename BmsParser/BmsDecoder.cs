@@ -5,7 +5,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using static BmsParser.DecodeLog.State;
 
 namespace BmsParser
 {
@@ -44,7 +43,7 @@ namespace BmsParser
             }
             catch (IOException e)
             {
-                log.Add(new DecodeLog(DecodeLog.State.ERROR, "BMSファイルが見つかりません"));
+                log.Add(new DecodeLog(State.Error, "BMSファイルが見つかりません"));
                 //Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
             }
             return null;
@@ -65,7 +64,7 @@ namespace BmsParser
             }
             catch (IOException e)
             {
-                log.Add(new DecodeLog(DecodeLog.State.ERROR, "BMSファイルが見つかりません"));
+                log.Add(new DecodeLog(State.Error, "BMSファイルが見つかりません"));
                 //Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
             }
             return null;
@@ -182,7 +181,7 @@ namespace BmsParser
                             }
                             catch (FormatException e)
                             {
-                                log.Add(new DecodeLog(WARNING, "#RANDOMに数字が定義されていません"));
+                                log.Add(new DecodeLog(State.Warning, "#RANDOMに数字が定義されていません"));
                             }
                         }
                         else if (matchesReserveWord(line, "IF"))
@@ -196,12 +195,12 @@ namespace BmsParser
                                 }
                                 catch (FormatException e)
                                 {
-                                    log.Add(new DecodeLog(WARNING, "#IFに数字が定義されていません"));
+                                    log.Add(new DecodeLog(State.Warning, "#IFに数字が定義されていません"));
                                 }
                             }
                             else
                             {
-                                log.Add(new DecodeLog(WARNING, "#IFに対応する#RANDOMが定義されていません"));
+                                log.Add(new DecodeLog(State.Warning, "#IFに対応する#RANDOMが定義されていません"));
                             }
                         }
                         else if (matchesReserveWord(line, "ENDIF"))
@@ -212,7 +211,7 @@ namespace BmsParser
                             }
                             else
                             {
-                                log.Add(new DecodeLog(WARNING, "ENDIFに対応するIFが存在しません: " + line));
+                                log.Add(new DecodeLog(State.Warning, "ENDIFに対応するIFが存在しません: " + line));
                             }
                         }
                         else if (matchesReserveWord(line, "ENDRANDOM"))
@@ -223,7 +222,7 @@ namespace BmsParser
                             }
                             else
                             {
-                                log.Add(new DecodeLog(WARNING, "ENDRANDOMに対応するRANDOMが存在しません: " + line));
+                                log.Add(new DecodeLog(State.Warning, "ENDRANDOMに対応するRANDOMが存在しません: " + line));
                             }
                         }
                         else if (skip.Count == 0 || skip.Last == null)
@@ -249,7 +248,7 @@ namespace BmsParser
                                 }
                                 else
                                 {
-                                    log.Add(new DecodeLog(WARNING, "小節に数字が定義されていません : " + line));
+                                    log.Add(new DecodeLog(State.Warning, "小節に数字が定義されていません : " + line));
                                 }
                             }
                             else if (matchesReserveWord(line, "BPM"))
@@ -267,12 +266,12 @@ namespace BmsParser
                                         }
                                         else
                                         {
-                                            log.Add(new DecodeLog(WARNING, "#negative BPMはサポートされていません : " + line));
+                                            log.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
                                         }
                                     }
                                     catch (FormatException e)
                                     {
-                                        log.Add(new DecodeLog(WARNING, "#BPMに数字が定義されていません : " + line));
+                                        log.Add(new DecodeLog(State.Warning, "#BPMに数字が定義されていません : " + line));
                                     }
                                 }
                                 else
@@ -293,12 +292,12 @@ namespace BmsParser
                                         }
                                         else
                                         {
-                                            log.Add(new DecodeLog(WARNING, "#negative BPMはサポートされていません : " + line));
+                                            log.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
                                         }
                                     }
                                     catch (FormatException e)
                                     {
-                                        log.Add(new DecodeLog(WARNING, "#BPMxxに数字が定義されていません : " + line));
+                                        log.Add(new DecodeLog(State.Warning, "#BPMxxに数字が定義されていません : " + line));
                                     }
                                 }
                             }
@@ -322,12 +321,12 @@ namespace BmsParser
                                     }
                                     catch (FormatException e)
                                     {
-                                        log.Add(new DecodeLog(WARNING, "#WAVxxは不十分な定義です : " + line));
+                                        log.Add(new DecodeLog(State.Warning, "#WAVxxは不十分な定義です : " + line));
                                     }
                                 }
                                 else
                                 {
-                                    log.Add(new DecodeLog(WARNING, "#WAVxxは不十分な定義です : " + line));
+                                    log.Add(new DecodeLog(State.Warning, "#WAVxxは不十分な定義です : " + line));
                                 }
                             }
                             else if (matchesReserveWord(line, "BMP"))
@@ -350,12 +349,12 @@ namespace BmsParser
                                     }
                                     catch (FormatException e)
                                     {
-                                        log.Add(new DecodeLog(WARNING, "#BMPxxは不十分な定義です : " + line));
+                                        log.Add(new DecodeLog(State.Warning, "#BMPxxは不十分な定義です : " + line));
                                     }
                                 }
                                 else
                                 {
-                                    log.Add(new DecodeLog(WARNING, "#BMPxxは不十分な定義です : " + line));
+                                    log.Add(new DecodeLog(State.Warning, "#BMPxxは不十分な定義です : " + line));
                                 }
                             }
                             else if (matchesReserveWord(line, "STOP"))
@@ -368,7 +367,7 @@ namespace BmsParser
                                         if (stop < 0)
                                         {
                                             stop = Math.Abs(stop);
-                                            log.Add(new DecodeLog(WARNING, "#negative STOPはサポートされていません : " + line));
+                                            log.Add(new DecodeLog(State.Warning, "#negative STOPはサポートされていません : " + line));
                                         }
                                         if (@base == 62)
                                         {
@@ -381,12 +380,12 @@ namespace BmsParser
                                     }
                                     catch (FormatException e)
                                     {
-                                        log.Add(new DecodeLog(WARNING, "#STOPxxに数字が定義されていません : " + line));
+                                        log.Add(new DecodeLog(State.Warning, "#STOPxxに数字が定義されていません : " + line));
                                     }
                                 }
                                 else
                                 {
-                                    log.Add(new DecodeLog(WARNING, "#STOPxxは不十分な定義です : " + line));
+                                    log.Add(new DecodeLog(State.Warning, "#STOPxxは不十分な定義です : " + line));
                                 }
                             }
                             else if (matchesReserveWord(line, "SCROLL"))
@@ -407,12 +406,12 @@ namespace BmsParser
                                     }
                                     catch (FormatException e)
                                     {
-                                        log.Add(new DecodeLog(WARNING, "#SCROLLxxに数字が定義されていません : " + line));
+                                        log.Add(new DecodeLog(State.Warning, "#SCROLLxxに数字が定義されていません : " + line));
                                     }
                                 }
                                 else
                                 {
-                                    log.Add(new DecodeLog(WARNING, "#SCROLLxxは不十分な定義です : " + line));
+                                    log.Add(new DecodeLog(State.Warning, "#SCROLLxxは不十分な定義です : " + line));
                                 }
                             }
                             else
@@ -486,7 +485,7 @@ namespace BmsParser
 
                 if (tl[0].Bpm == 0)
                 {
-                    log.Add(new DecodeLog(ERROR, "開始BPMが定義されていないため、BMS解析に失敗しました"));
+                    log.Add(new DecodeLog(State.Error, "開始BPMが定義されていないため、BMS解析に失敗しました"));
                     //Logger.getGlobal().severe(path + ":BMSファイル解析失敗: 開始BPMが定義されていません");
                     return null;
                 }
@@ -495,7 +494,7 @@ namespace BmsParser
                 {
                     if (lnendstatus[i] != null)
                     {
-                        log.Add(new DecodeLog(WARNING, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
+                        log.Add(new DecodeLog(State.Warning, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
                         if (lnendstatus[i].Section != Double.MinValue)
                         {
                             timelines[lnendstatus[i].Section].timeline.SetNote(i, null);
@@ -505,30 +504,30 @@ namespace BmsParser
 
                 if (model.TotalType != TotalType.Bms)
                 {
-                    log.Add(new DecodeLog(WARNING, "TOTALが未定義です"));
+                    log.Add(new DecodeLog(State.Warning, "TOTALが未定義です"));
                 }
                 if (model.Total <= 60.0)
                 {
-                    log.Add(new DecodeLog(WARNING, "TOTAL値が少なすぎます"));
+                    log.Add(new DecodeLog(State.Warning, "TOTAL値が少なすぎます"));
                 }
                 if (tl.Length > 0)
                 {
                     if (tl[tl.Length - 1].Time >= model.LastTime + 30000)
                     {
-                        log.Add(new DecodeLog(WARNING, "最後のノート定義から30秒以上の余白があります"));
+                        log.Add(new DecodeLog(State.Warning, "最後のノート定義から30秒以上の余白があります"));
                     }
                 }
                 if (model.Player > 1 && (model.Mode == Mode.Beat5K || model.Mode == Mode.Beat7K))
                 {
-                    log.Add(new DecodeLog(WARNING, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
+                    log.Add(new DecodeLog(State.Warning, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
                 }
                 if (model.Player == 1 && (model.Mode == Mode.Beat10K || model.Mode == Mode.Beat14K))
                 {
-                    log.Add(new DecodeLog(WARNING, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
+                    log.Add(new DecodeLog(State.Warning, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
                 }
                 model.MD5 = getMd5Hash(data);
                 model.Sha256 = getSha256Hash(data);
-                log.Add(new DecodeLog(INFO, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
+                log.Add(new DecodeLog(State.Info, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
                 //Logger.getGlobal().fine("BMSデータ解析時間(ms) :" + (System.currentTimeMillis() - time));
 
                 if (selectedRandom == null)
@@ -548,13 +547,13 @@ namespace BmsParser
             }
             catch (IOException e)
             {
-                log.Add(new DecodeLog(ERROR, "BMSファイルへのアクセスに失敗しました"));
+                log.Add(new DecodeLog(State.Error, "BMSファイルへのアクセスに失敗しました"));
                 //Logger.getGlobal()
                 //        .severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
             }
             catch (Exception e)
             {
-                log.Add(new DecodeLog(ERROR, "何らかの異常によりBMS解析に失敗しました"));
+                log.Add(new DecodeLog(State.Error, "何らかの異常によりBMS解析に失敗しました"));
                 throw;
                 //Logger.getGlobal()
                 //        .severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
@@ -637,12 +636,12 @@ namespace BmsParser
                 }
                 else
                 {
-                    return new DecodeLog(WARNING, "#PLAYERに規定外の数字が定義されています : " + player);
+                    return new DecodeLog(State.Warning, "#PLAYERに規定外の数字が定義されています : " + player);
                 }
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#PLAYERに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#PLAYERに数字が定義されていません");
             }
             return null;
         });
@@ -688,12 +687,12 @@ namespace BmsParser
                 }
                 else
                 {
-                    return new DecodeLog(WARNING, "#RANKに規定外の数字が定義されています : " + rank);
+                    return new DecodeLog(State.Warning, "#RANKに規定外の数字が定義されています : " + rank);
                 }
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#RANKに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#RANKに数字が定義されていません");
             }
             return null;
         });
@@ -709,12 +708,12 @@ namespace BmsParser
                 }
                 else
                 {
-                    return new DecodeLog(WARNING, "#DEFEXRANK 1以下はサポートしていません" + rank);
+                    return new DecodeLog(State.Warning, "#DEFEXRANK 1以下はサポートしていません" + rank);
                 }
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#DEFEXRANKに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#DEFEXRANKに数字が定義されていません");
             }
             return null;
         });
@@ -730,12 +729,12 @@ namespace BmsParser
                 }
                 else
                 {
-                    return new DecodeLog(WARNING, "#TOTALが0以下です");
+                    return new DecodeLog(State.Warning, "#TOTALが0以下です");
                 }
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#TOTALに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#TOTALに数字が定義されていません");
             }
             return null;
         });
@@ -747,7 +746,7 @@ namespace BmsParser
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#VOLWAVに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#VOLWAVに数字が定義されていません");
             }
             return null;
         });
@@ -781,7 +780,7 @@ namespace BmsParser
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#LNOBJに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#LNOBJに数字が定義されていません");
             }
             return null;
         });
@@ -792,13 +791,13 @@ namespace BmsParser
                 int lnmode = int.Parse(arg);
                 if (lnmode < 0 || lnmode > 3)
                 {
-                    return new DecodeLog(WARNING, "#LNMODEに無効な数字が定義されています");
+                    return new DecodeLog(State.Warning, "#LNMODEに無効な数字が定義されています");
                 }
                 model.LNMode = (LNMode)lnmode;
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#LNMODEに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#LNMODEに数字が定義されていません");
             }
             return null;
         });
@@ -810,7 +809,7 @@ namespace BmsParser
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#DIFFICULTYに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#DIFFICULTYに数字が定義されていません");
             }
             return null;
         });
@@ -831,13 +830,13 @@ namespace BmsParser
                 int @base = int.Parse(arg);
                 if (@base != 62)
                 {
-                    return new DecodeLog(WARNING, "#BASEに無効な数字が定義されています");
+                    return new DecodeLog(State.Warning, "#BASEに無効な数字が定義されています");
                 }
                 model.Base = @base;
             }
             catch (FormatException e)
             {
-                return new DecodeLog(WARNING, "#BASEに数字が定義されていません");
+                return new DecodeLog(State.Warning, "#BASEに数字が定義されていません");
             }
             return null;
         });

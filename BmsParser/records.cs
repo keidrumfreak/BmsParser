@@ -8,9 +8,9 @@ namespace BmsParser
 {
     public record ChartInformation(string Path, LNType LNType, int[] SelectedRandoms);
 
-    //public enum State { Info, Warning, Error }
+    public enum State { Info, Warning, Error }
 
-    //public record DecodeLog(State State, string Message);
+    public record DecodeLog(State State, string Message);
 
     //public enum EventType { Always, Play, Miss }
 

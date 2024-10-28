@@ -210,15 +210,15 @@ namespace BmsParser
         {
             log.ForEach(log =>
             {
-                switch (log.getState())
+                switch (log.State)
                 {
-                    case DecodeLog.State.INFO:
+                    case State.Info:
                         //Logger.getGlobal().info(path + " : " + log.getMessage());
                         break;
-                    case DecodeLog.State.WARNING:
+                    case State.Warning:
                         //Logger.getGlobal().warning(path + " : " + log.getMessage());
                         break;
-                    case DecodeLog.State.ERROR:
+                    case State.Error:
                         //Logger.getGlobal().severe(path + " : " + log.getMessage());
                         break;
                 }
