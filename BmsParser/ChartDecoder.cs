@@ -97,11 +97,11 @@ namespace BmsParser
             }
             else if (c1 >= 'a' && c1 <= 'z')
             {
-                result = ((c1 - 'a') + 10) * 36;
+                result = (c1 - 'a' + 10) * 36;
             }
             else if (c1 >= 'A' && c1 <= 'Z')
             {
-                result = ((c1 - 'A') + 10) * 36;
+                result = (c1 - 'A' + 10) * 36;
             }
             else
             {
@@ -110,15 +110,15 @@ namespace BmsParser
 
             if (c2 >= '0' && c2 <= '9')
             {
-                result += (c2 - '0');
+                result += c2 - '0';
             }
             else if (c2 >= 'a' && c2 <= 'z')
             {
-                result += (c2 - 'a') + 10;
+                result += c2 - 'a' + 10;
             }
             else if (c2 >= 'A' && c2 <= 'Z')
             {
-                result += (c2 - 'A') + 10;
+                result += c2 - 'A' + 10;
             }
             else
             {
@@ -148,11 +148,11 @@ namespace BmsParser
             }
             else if (c1 >= 'A' && c1 <= 'Z')
             {
-                result = ((c1 - 'A') + 10) * 62;
+                result = (c1 - 'A' + 10) * 62;
             }
             else if (c1 >= 'a' && c1 <= 'z')
             {
-                result = ((c1 - 'a') + 36) * 62;
+                result = (c1 - 'a' + 36) * 62;
             }
             else
             {
@@ -161,15 +161,15 @@ namespace BmsParser
 
             if (c2 >= '0' && c2 <= '9')
             {
-                result += (c2 - '0');
+                result += c2 - '0';
             }
             else if (c2 >= 'A' && c2 <= 'Z')
             {
-                result += (c2 - 'A') + 10;
+                result += c2 - 'A' + 10;
             }
             else if (c2 >= 'a' && c2 <= 'z')
             {
-                result += (c2 - 'a') + 36;
+                result += c2 - 'a' + 36;
             }
             else
             {

@@ -133,10 +133,10 @@ namespace BmsParser
         public int GetTotalNotes(LNType lnType = LNType.LongNote)
         {
             return notes.Count(n => n != null
-            && (n is LongNote ln
+            && n is LongNote ln
             && (ln.Type == LNMode.ChargeNote || ln.Type == LNMode.HellChargeNote
                 || (ln.Type == LNMode.Undefined && lnType != LNType.LongNote)
-                || !ln.IsEnd)) || n is NormalNote);
+                || !ln.IsEnd) || n is NormalNote);
         }
 
         public bool ExistNote() => notes.Any(n => n != null);

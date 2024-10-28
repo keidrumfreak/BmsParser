@@ -71,7 +71,7 @@ namespace BmsParser.Bmson
                 model.Sha256 = GetSha256Hash(bin);
                 //model.setSHA256(BMSDecoder.convertHexString(digest.digest()));
             }
-            catch (IOException e)
+            catch (IOException)
             {
                 //e.printStackTrace();
                 return null;

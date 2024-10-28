@@ -73,7 +73,7 @@ namespace BmsParser
             }
             foreach (var line in lines)
             {
-                var channel = ChartDecoder.ParseInt36(line[4], line[5]);
+                var channel = ParseInt36(line[4], line[5]);
                 switch (channel)
                 {
                     case ILLEGAL:
@@ -101,7 +101,7 @@ namespace BmsParser
                         {
                             if (@base == 62)
                             {
-                                data = ChartDecoder.ParseInt36(ChartDecoder.ToBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
+                                data = ParseInt36(ToBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
                             }
                             bpmchange.Put(pos, (double)(data / 36) * 16 + (data % 36));
                         });
@@ -225,11 +225,11 @@ namespace BmsParser
             {
                 if (@base == 62)
                 {
-                    result[i] = ChartDecoder.ParseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
+                    result[i] = ParseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
                 }
                 else
                 {
-                    result[i] = ChartDecoder.ParseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
+                    result[i] = ParseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
                 }
                 if (result[i] == -1)
                 {
@@ -251,11 +251,11 @@ namespace BmsParser
             {
                 if (@base == 62)
                 {
-                    result = ChartDecoder.ParseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
+                    result = ParseInt62(line[findex + i * 2], line[findex + i * 2 + 1]);
                 }
                 else
                 {
-                    result = ChartDecoder.ParseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
+                    result = ParseInt36(line[findex + i * 2], line[findex + i * 2 + 1]);
                 }
                 if (result > 0)
                 {
@@ -340,14 +340,14 @@ namespace BmsParser
                 else if (st <= 1)
                 {
                     var tl = getTimeLine(sectionnum + ste.Key * rate);
-                    tl.MicroStop = (long)(1000.0 * 1000 * 60 * 4 * ste.Value / (tl.Bpm));
+                    tl.MicroStop = (long)(1000.0 * 1000 * 60 * 4 * ste.Value / tl.Bpm);
                     ste = stops.MoveNext() ? stops.Current : default;
                 }
             }
 
             foreach (var line in channellines)
             {
-                var channel = ChartDecoder.ParseInt36(line[4], line[5]);
+                var channel = ParseInt36(line[4], line[5]);
                 var tmpkey = 0;
                 if (channel >= P1_KEY_BASE && channel < P1_KEY_BASE + 9)
                 {
@@ -610,7 +610,7 @@ namespace BmsParser
                             {
                                 if (@base == 62)
                                 {
-                                    data = ChartDecoder.ParseInt36(ChartDecoder.ToBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
+                                    data = ParseInt36(ToBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
                                 }
                                 tl.SetNote(key, new MineNote(wavmap[0], data));
                             }
@@ -652,7 +652,7 @@ namespace BmsParser
                 var le = tlcache.LastOrDefault(c => c.Key < section);
                 var scroll = le.Value.Timeline.Scroll;
                 var bpm = le.Value.Timeline.Bpm;
-                var time = le.Value.Time + le.Value.Timeline.MicroStop + (240000.0 * 1000 * (section - le.Key)) / bpm;
+                var time = le.Value.Time + le.Value.Timeline.MicroStop + 240000.0 * 1000 * (section - le.Key) / bpm;
 
                 var tl = new Timeline(section, (long)time, model.Mode.Key)
                 {

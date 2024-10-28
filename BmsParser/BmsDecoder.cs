@@ -41,7 +41,7 @@ namespace BmsParser
                 this.lntype = info.LNType;
                 return decode(info.Path, File.ReadAllBytes(info.Path), info.Path.ToString().ToLower().EndsWith(".pms"), info.SelectedRandoms);
             }
-            catch (IOException e)
+            catch (IOException)
             {
                 log.Add(new DecodeLog(State.Error, "BMSファイルが見つかりません"));
                 //Logger.getGlobal().severe("BMSファイル解析中の例外 : " + e.getClass().getName() + " - " + e.getMessage());
@@ -147,9 +147,8 @@ namespace BmsParser
                         // RANDOM制御系
                         if (matchesReserveWord(line, "RANDOM"))
                         {
-                            try
+                            if (int.TryParse(line[8..].Trim(), out var r))
                             {
-                                var r = int.Parse(line[8..].Trim());
                                 randoms.AddLast(r);
                                 if (selectedRandom != null)
                                 {
@@ -161,7 +160,7 @@ namespace BmsParser
                                     srandoms.AddLast(crandom.Last!);
                                 }
                             }
-                            catch (FormatException e)
+                            else
                             {
                                 log.Add(new DecodeLog(State.Warning, "#RANDOMに数字が定義されていません"));
                             }
@@ -171,11 +170,11 @@ namespace BmsParser
                             // RANDOM分岐開始
                             if (crandom.Count != 0)
                             {
-                                try
+                                if (int.TryParse(line[4..].Trim(), out var x))
                                 {
-                                    skip.AddLast((crandom.Last!.Value != int.Parse(line[4..].Trim())));
+                                    skip.AddLast(crandom.Last!.Value != x);
                                 }
-                                catch (FormatException e)
+                                else
                                 {
                                     log.Add(new DecodeLog(State.Warning, "#IFに数字が定義されていません"));
                                 }
@@ -235,10 +234,8 @@ namespace BmsParser
                                 if (line[4] == ' ')
                                 {
                                     // BPMは小数点のケースがある(FREEDOM DiVE)
-                                    try
+                                    if (double.TryParse(line[5..].Trim(), out var bpm))
                                     {
-                                        var arg = line[5..].Trim();
-                                        var bpm = double.Parse(arg);
                                         if (bpm > 0)
                                         {
                                             model.Bpm = bpm;
@@ -248,25 +245,24 @@ namespace BmsParser
                                             log.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
                                         }
                                     }
-                                    catch (FormatException e)
+                                    else
                                     {
                                         log.Add(new DecodeLog(State.Warning, "#BPMに数字が定義されていません : " + line));
                                     }
                                 }
                                 else
                                 {
-                                    try
+                                    if (double.TryParse(line[7..].Trim(), out var bpm))
                                     {
-                                        var bpm = double.Parse(line[7..].Trim());
                                         if (bpm > 0)
                                         {
                                             if (@base == 62)
                                             {
-                                                bpmtable.Put(ChartDecoder.ParseInt62(line, 4), bpm);
+                                                bpmtable.Put(ParseInt62(line, 4), bpm);
                                             }
                                             else
                                             {
-                                                bpmtable.Put(ChartDecoder.ParseInt36(line, 4), bpm);
+                                                bpmtable.Put(ParseInt36(line, 4), bpm);
                                             }
                                         }
                                         else
@@ -274,7 +270,7 @@ namespace BmsParser
                                             log.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
                                         }
                                     }
-                                    catch (FormatException e)
+                                    else
                                     {
                                         log.Add(new DecodeLog(State.Warning, "#BPMxxに数字が定義されていません : " + line));
                                     }
@@ -290,15 +286,15 @@ namespace BmsParser
                                         var file_name = line[7..].Trim().Replace('\\', '/');
                                         if (@base == 62)
                                         {
-                                            wm[ChartDecoder.ParseInt62(line, 4)] = wavlist.Count;
+                                            wm[ParseInt62(line, 4)] = wavlist.Count;
                                         }
                                         else
                                         {
-                                            wm[ChartDecoder.ParseInt36(line, 4)] = wavlist.Count;
+                                            wm[ParseInt36(line, 4)] = wavlist.Count;
                                         }
                                         wavlist.Add(file_name);
                                     }
-                                    catch (FormatException e)
+                                    catch (FormatException)
                                     {
                                         log.Add(new DecodeLog(State.Warning, "#WAVxxは不十分な定義です : " + line));
                                     }
@@ -318,15 +314,15 @@ namespace BmsParser
                                         var file_name = line[7..].Trim().Replace('\\', '/');
                                         if (@base == 62)
                                         {
-                                            bm[ChartDecoder.ParseInt62(line, 4)] = bgalist.Count;
+                                            bm[ParseInt62(line, 4)] = bgalist.Count;
                                         }
                                         else
                                         {
-                                            bm[ChartDecoder.ParseInt36(line, 4)] = bgalist.Count;
+                                            bm[ParseInt36(line, 4)] = bgalist.Count;
                                         }
                                         bgalist.Add(file_name);
                                     }
-                                    catch (FormatException e)
+                                    catch (FormatException)
                                     {
                                         log.Add(new DecodeLog(State.Warning, "#BMPxxは不十分な定義です : " + line));
                                     }
@@ -340,9 +336,9 @@ namespace BmsParser
                             {
                                 if (line.Length >= 9)
                                 {
-                                    try
+                                    if (double.TryParse(line[8..].Trim(), out var stop))
                                     {
-                                        var stop = double.Parse(line[8..].Trim()) / 192;
+                                        stop /= 192;
                                         if (stop < 0)
                                         {
                                             stop = Math.Abs(stop);
@@ -350,14 +346,14 @@ namespace BmsParser
                                         }
                                         if (@base == 62)
                                         {
-                                            stoptable.Put(ChartDecoder.ParseInt62(line, 5), stop);
+                                            stoptable.Put(ParseInt62(line, 5), stop);
                                         }
                                         else
                                         {
-                                            stoptable.Put(ChartDecoder.ParseInt36(line, 5), stop);
+                                            stoptable.Put(ParseInt36(line, 5), stop);
                                         }
                                     }
-                                    catch (FormatException e)
+                                    else
                                     {
                                         log.Add(new DecodeLog(State.Warning, "#STOPxxに数字が定義されていません : " + line));
                                     }
@@ -371,19 +367,18 @@ namespace BmsParser
                             {
                                 if (line.Length >= 11)
                                 {
-                                    try
+                                    if (double.TryParse(line[10..].Trim(), out var scroll))
                                     {
-                                        var scroll = double.Parse(line[10..].Trim());
                                         if (@base == 62)
                                         {
-                                            scrolltable.Put(ChartDecoder.ParseInt62(line, 7), scroll);
+                                            scrolltable.Put(ParseInt62(line, 7), scroll);
                                         }
                                         else
                                         {
-                                            scrolltable.Put(ChartDecoder.ParseInt36(line, 7), scroll);
+                                            scrolltable.Put(ParseInt36(line, 7), scroll);
                                         }
                                     }
-                                    catch (FormatException e)
+                                    else
                                     {
                                         log.Add(new DecodeLog(State.Warning, "#SCROLLxxに数字が定義されていません : " + line));
                                     }
@@ -526,13 +521,13 @@ namespace BmsParser
                 PrintLog(path);
                 return model;
             }
-            catch (IOException e)
+            catch (IOException)
             {
                 log.Add(new DecodeLog(State.Error, "BMSファイルへのアクセスに失敗しました"));
                 //Logger.getGlobal()
                 //        .severe(path + ":BMSファイル解析失敗: " + e.getClass().getName() + " - " + e.getMessage());
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 log.Add(new DecodeLog(State.Error, "何らかの異常によりBMS解析に失敗しました"));
                 throw;
@@ -573,10 +568,8 @@ namespace BmsParser
 
         public static readonly CommandWord PLAYER = new(nameof(PLAYER), (model, arg) =>
         {
-            try
+            if (int.TryParse(arg, out var player))
             {
-
-                var player = int.Parse(arg);
                 // TODO playerの許容幅は？
                 if (player >= 1 && player < 3)
                 {
@@ -588,7 +581,7 @@ namespace BmsParser
                     return new DecodeLog(State.Warning, "#PLAYERに規定外の数字が定義されています : " + player);
                 }
             }
-            catch (FormatException e)
+            else
             {
                 return new DecodeLog(State.Warning, "#PLAYERに数字が定義されていません");
             }
@@ -626,9 +619,8 @@ namespace BmsParser
         });
         public static readonly CommandWord RANK = new(nameof(RANK), (model, arg) =>
         {
-            try
+            if (int.TryParse(arg, out var rank))
             {
-                var rank = int.Parse(arg);
                 if (rank >= 0 && rank < 5)
                 {
                     model.JudgeRank = rank;
@@ -639,7 +631,7 @@ namespace BmsParser
                     return new DecodeLog(State.Warning, "#RANKに規定外の数字が定義されています : " + rank);
                 }
             }
-            catch (FormatException e)
+            else
             {
                 return new DecodeLog(State.Warning, "#RANKに数字が定義されていません");
             }
@@ -647,9 +639,8 @@ namespace BmsParser
         });
         public static readonly CommandWord DEFEXRANK = new(nameof(DEFEXRANK), (model, arg) =>
         {
-            try
+            if (int.TryParse(arg, out var rank))
             {
-                var rank = int.Parse(arg);
                 if (rank >= 1)
                 {
                     model.JudgeRank = rank;
@@ -660,7 +651,7 @@ namespace BmsParser
                     return new DecodeLog(State.Warning, "#DEFEXRANK 1以下はサポートしていません" + rank);
                 }
             }
-            catch (FormatException e)
+            else
             {
                 return new DecodeLog(State.Warning, "#DEFEXRANKに数字が定義されていません");
             }
@@ -668,9 +659,8 @@ namespace BmsParser
         });
         public static readonly CommandWord TOTAL = new(nameof(TOTAL), (model, arg) =>
         {
-            try
+            if (double.TryParse(arg, out var total))
             {
-                var total = double.Parse(arg);
                 if (total > 0)
                 {
                     model.Total = total;
@@ -681,7 +671,7 @@ namespace BmsParser
                     return new DecodeLog(State.Warning, "#TOTALが0以下です");
                 }
             }
-            catch (FormatException e)
+            else
             {
                 return new DecodeLog(State.Warning, "#TOTALに数字が定義されていません");
             }
@@ -689,11 +679,11 @@ namespace BmsParser
         });
         public static readonly CommandWord VOLWAV = new(nameof(VOLWAV), (model, arg) =>
         {
-            try
+            if (int.TryParse(arg, out var x))
             {
-                model.VolWav = int.Parse(arg);
+                model.VolWav = x;
             }
-            catch (FormatException e)
+            else
             {
                 return new DecodeLog(State.Warning, "#VOLWAVに数字が定義されていません");
             }
@@ -727,7 +717,7 @@ namespace BmsParser
                     model.LNObj = ChartDecoder.ParseInt36(arg, 0);
                 }
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 return new DecodeLog(State.Warning, "#LNOBJに数字が定義されていません");
             }
@@ -735,16 +725,15 @@ namespace BmsParser
         });
         public static readonly CommandWord LNMODE = new(nameof(LNMODE), (model, arg) =>
         {
-            try
+            if (int.TryParse(arg, out var lnmode))
             {
-                var lnmode = int.Parse(arg);
                 if (lnmode < 0 || lnmode > 3)
                 {
                     return new DecodeLog(State.Warning, "#LNMODEに無効な数字が定義されています");
                 }
                 model.LNMode = (LNMode)lnmode;
             }
-            catch (FormatException e)
+            else
             {
                 return new DecodeLog(State.Warning, "#LNMODEに数字が定義されていません");
             }
@@ -752,11 +741,11 @@ namespace BmsParser
         });
         public static readonly CommandWord DIFFICULTY = new(nameof(DIFFICULTY), (model, arg) =>
         {
-            try
+            if (int.TryParse(arg, out var x))
             {
-                model.Difficulty = (Difficulty)int.Parse(arg);
+                model.Difficulty = (Difficulty)x;
             }
-            catch (FormatException e)
+            else
             {
                 return new DecodeLog(State.Warning, "#DIFFICULTYに数字が定義されていません");
             }
@@ -774,16 +763,15 @@ namespace BmsParser
         });
         public static readonly CommandWord BASE = new(nameof(BASE), (model, arg) =>
         {
-            try
+            if (int.TryParse(arg, out var @base))
             {
-                var @base = int.Parse(arg);
                 if (@base != 62)
                 {
                     return new DecodeLog(State.Warning, "#BASEに無効な数字が定義されています");
                 }
                 model.Base = @base;
             }
-            catch (FormatException e)
+            else
             {
                 return new DecodeLog(State.Warning, "#BASEに数字が定義されていません");
             }
@@ -798,28 +786,6 @@ namespace BmsParser
         private CommandWord(string name, Func<BmsModel, string, DecodeLog?> function)
         {
             this.name = name;
-            this.function = function;
-        }
-    }
-
-    /**
-     * 予約語
-     *
-     * @author exch
-     */
-    public class OptionWord
-    {
-
-        readonly OptionWord URL = new((model, arg) =>
-        {
-            // TODO 未実装
-            return null;
-        });
-
-        public Func<BmsModel, string, DecodeLog?> function;
-
-        private OptionWord(Func<BmsModel, string, DecodeLog?> function)
-        {
             this.function = function;
         }
     }
