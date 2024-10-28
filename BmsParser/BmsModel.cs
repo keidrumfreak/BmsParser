@@ -167,7 +167,7 @@ namespace BmsParser
                 mode = value;
                 foreach (var tl in Timelines)
                 {
-                    tl.                    LaneCount = mode.Key;
+                    tl.LaneCount = mode.Key;
                 }
             }
         }
@@ -232,7 +232,7 @@ namespace BmsParser
         /// </summary>
         public int Base { get; set; } = 36;
 
-        public static BmsModel Decode(string path)
+        public static BmsModel? Decode(string path)
         {
             if (path.EndsWith("bmson"))
             {
@@ -244,7 +244,7 @@ namespace BmsParser
             }
         }
 
-        public static BmsModel Decode(string path, byte[] bin)
+        public static BmsModel? Decode(string path, byte[] bin)
         {
             if (path.EndsWith("bmson"))
             {

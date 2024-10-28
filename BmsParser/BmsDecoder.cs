@@ -22,13 +22,13 @@ namespace BmsParser
             lntype = lnType;
         }
 
-        new public BmsModel Decode(string path)
+        new public BmsModel? Decode(string path)
         {
             var model = decode(path, File.ReadAllBytes(path), path.EndsWith(".pms"), null);
             return model;
         }
 
-        public BmsModel Decode(string path, byte[] bin)
+        public BmsModel? Decode(string path, byte[] bin)
         {
             var model = decode(path, bin, path.EndsWith(".pms"), null);
             return model;
@@ -83,16 +83,16 @@ namespace BmsParser
 
         private static readonly CommandWord[] commandWords = CommandWord.values;
 
-        /**
-         * 指定したBMSファイルをモデルにデコードする
-         *
-         * @param data
-         * @return
-         */
-        public BmsModel Decode(byte[] data, bool ispms, int[] random)
-        {
-            return this.decode(null, data, ispms, random);
-        }
+        ///**
+        // * 指定したBMSファイルをモデルにデコードする
+        // *
+        // * @param data
+        // * @return
+        // */
+        //public BmsModel? Decode(byte[] data, bool ispms, int[] random)
+        //{
+        //    return this.decode(null, data, ispms, random);
+        //}
 
         /**
          * 指定したBMSファイルをモデルにデコードする
@@ -100,7 +100,7 @@ namespace BmsParser
          * @param data
          * @return
          */
-        private BmsModel decode(string path, byte[] data, bool ispms, int[]? selectedRandom)
+        private BmsModel? decode(string path, byte[] data, bool ispms, int[]? selectedRandom)
         {
             log.Clear();
             var time = DateTime.Now.Ticks;
@@ -109,23 +109,8 @@ namespace BmsParser
             stoptable.Clear();
             bpmtable.Clear();
 
-            //MessageDigest md5digest, sha256digest;
-            //try
-            //{
-            //    md5digest = MessageDigest.getInstance("MD5");
-            //    sha256digest = MessageDigest.getInstance("SHA-256");
-            //}
-            //catch (NoSuchAlgorithmException e1)
-            //{
-            //    e1.printStackTrace();
-            //    return null;
-            //}
-
             var maxsec = 0;
             // BMS読み込み、ハッシュ値取得
-            //try (BufferedReader br = new BufferedReader(new InputStreamReader(
-            //        new DigestInputStream(new DigestInputStream(new ByteArrayInputStream(data), md5digest), sha256digest),
-            //        "MS932"));) {
             try
             {
                 using var mem = new MemoryStream(data);
@@ -134,7 +119,7 @@ namespace BmsParser
                 // Logger.getGlobal().info(
                 // "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
 
-                string line = null;
+                string? line = null;
                 wavlist.Clear();
                 Array.Fill(wm, -2);
                 bgalist.Clear();
@@ -173,7 +158,7 @@ namespace BmsParser
                                 else
                                 {
                                     crandom.AddLast((int)(new Random().NextDouble() * r) + 1);
-                                    srandoms.AddLast(crandom.Last);
+                                    srandoms.AddLast(crandom.Last!);
                                 }
                             }
                             catch (FormatException e)
@@ -188,7 +173,7 @@ namespace BmsParser
                             {
                                 try
                                 {
-                                    skip.AddLast((crandom.Last.Value != int.Parse(line[4..].Trim())));
+                                    skip.AddLast((crandom.Last!.Value != int.Parse(line[4..].Trim())));
                                 }
                                 catch (FormatException e)
                                 {
@@ -447,7 +432,7 @@ namespace BmsParser
                 model.WavList = [.. wavlist];
                 model.BgaList = [.. bgalist];
 
-                Section prev = null;
+                Section? prev = null;
                 var sections = new Section[maxsec + 1];
                 for (var i = 0; i <= maxsec; i++)
                 {
@@ -807,10 +792,10 @@ namespace BmsParser
 
         public static readonly CommandWord[] values = [PLAYER, GENRE, TITLE, SUBTITLE, ARTIST, SUBARTIST, PLAYLEVEL, RANK, DEFEXRANK, TOTAL, VOLWAV, STAGEFILE, BACKBMP, PREVIEW, LNOBJ, LNMODE, DIFFICULTY, BANNER, COMMENT, BASE];
 
-        public Func<BmsModel, string, DecodeLog> function;
+        public Func<BmsModel, string, DecodeLog?> function;
         public string name;
 
-        private CommandWord(string name, Func<BmsModel, string, DecodeLog> function)
+        private CommandWord(string name, Func<BmsModel, string, DecodeLog?> function)
         {
             this.name = name;
             this.function = function;
@@ -831,9 +816,9 @@ namespace BmsParser
             return null;
         });
 
-        public Func<BmsModel, string, DecodeLog> function;
+        public Func<BmsModel, string, DecodeLog?> function;
 
-        private OptionWord(Func<BmsModel, string, DecodeLog> function)
+        private OptionWord(Func<BmsModel, string, DecodeLog?> function)
         {
             this.function = function;
         }

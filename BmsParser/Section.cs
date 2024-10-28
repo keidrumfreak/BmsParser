@@ -55,7 +55,7 @@ namespace BmsParser
 
         private readonly List<string> channellines;
 
-        public Section(BmsModel model, Section prev, List<string> lines, Dictionary<int, double> bpmtable,
+        public Section(BmsModel model, Section? prev, List<string> lines, Dictionary<int, double> bpmtable,
                 Dictionary<int, double> stoptable, Dictionary<int, double> scrolltable, List<DecodeLog> log)
         {
             this.model = model;

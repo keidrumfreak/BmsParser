@@ -25,7 +25,7 @@ namespace BmsParser
             {
                 if (tl.ExistNote(lane))
                 {
-                    note.Add(tl.GetNote(lane));
+                    note.Add(tl.GetNote(lane)!);
                 }
                 if (tl.GetHiddenNote(lane) != null)
                 {

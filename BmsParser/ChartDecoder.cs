@@ -208,7 +208,7 @@ namespace BmsParser
             return new string(sb.ToString().Reverse().ToArray());
         }
 
-        protected void PrintLog(string path)
+        protected void PrintLog(string? path)
         {
             log.ForEach(log =>
             {

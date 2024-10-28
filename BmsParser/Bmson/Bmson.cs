@@ -10,25 +10,25 @@ namespace BmsParser.Bmson
     class Bmson
     {
         [JsonPropertyName("info")]
-        public BmsonInfo Info { get; set; }
+        public BmsonInfo? Info { get; set; }
 
         [JsonPropertyName("lines")]
-        public BarLine[] Lines { get; set; }
+        public BarLine[] Lines { get; set; } = [];
 
         [JsonPropertyName("bpm_events")]
-        public BpmEvent[] BpmEvents { get; set; }
+        public BpmEvent[] BpmEvents { get; set; } = [];
 
         [JsonPropertyName("stop_events")]
-        public StopEvent[] StopEvents { get; set; }
+        public StopEvent[] StopEvents { get; set; } = [];
 
         [JsonPropertyName("scroll_events")]
-        public ScrollEvent[] ScrollEvents { get; set; }
+        public ScrollEvent[] ScrollEvents { get; set; } = [];
 
         [JsonPropertyName("sound_channels")]
-        public SoundChannel[] SoundChannels { get; set; }
+        public required SoundChannel[] SoundChannels { get; set; }
 
         [JsonPropertyName("bga")]
-        public Bga Bga { get; set; }
+        public Bga? Bga { get; set; }
 
         [JsonPropertyName("mine_channels")]
         public MineChannel[] MineChannels { get; set; } = [];
@@ -40,25 +40,25 @@ namespace BmsParser.Bmson
     class BmsonInfo
     {
         [JsonPropertyName("title")]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         [JsonPropertyName("subtitle")]
         public string Subtitle { get; set; } = string.Empty;
 
         [JsonPropertyName("artist")]
-        public string Artist { get; set; }
+        public string Artist { get; set; } = string.Empty;
 
         [JsonPropertyName("subartists")]
         public string[] SubArtists { get; set; } = [];
 
         [JsonPropertyName("genre")]
-        public string Genre { get; set; }
+        public string Genre { get; set; } = string.Empty;
 
         [JsonPropertyName("mode_hint")]
-        public string ModeHint { get; set; } = "beat-7k";
+        public string ModeHint { get; set; } = string.Empty;
 
         [JsonPropertyName("chart_name")]
-        public string ChartName { get; set; }
+        public string ChartName { get; set; } = string.Empty;
 
         [JsonPropertyName("level")]
         public ulong Level { get; set; }
@@ -73,16 +73,16 @@ namespace BmsParser.Bmson
         public double Total { get; set; } = 100;
 
         [JsonPropertyName("back_image")]
-        public string BackImage { get; set; }
+        public string BackImage { get; set; } = string.Empty;
 
         [JsonPropertyName("eyecatch_image")]
-        public string EyecatchImage { get; set; }
+        public string EyecatchImage { get; set; } = string.Empty;
 
         [JsonPropertyName("banner_image")]
-        public string BannerImage { get; set; }
+        public string BannerImage { get; set; } = string.Empty;
 
         [JsonPropertyName("preview_image")]
-        public string PreviewMusic { get; set; }
+        public string PreviewMusic { get; set; } = string.Empty;
 
         [JsonPropertyName("resolution")]
         public int Resolution { get; set; } = 240;
@@ -100,10 +100,10 @@ namespace BmsParser.Bmson
     public class SoundChannel
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("notes")]
-        public BmsonNote[] Notes { get; set; }
+        public BmsonNote[] Notes { get; set; } = [];
     }
 
     public class BmsonNote
@@ -148,19 +148,19 @@ namespace BmsParser.Bmson
     public class Bga
     {
         [JsonPropertyName("bga_header")]
-        public BgaHeader[] BgaHeader { get; set; }
+        public BgaHeader[]? BgaHeader { get; set; }
 
         [JsonPropertyName("bga_sequence")]
-        public BgaSequence[] BgaSequence { get; set; }
+        public BgaSequence[]? BgaSequence { get; set; }
 
         [JsonPropertyName("bga_events")]
-        public BgaEvent[] BgaEvents { get; set; }
+        public BgaEvent[]? BgaEvents { get; set; }
 
         [JsonPropertyName("layer_events")]
-        public BgaEvent[] LayerEvents { get; set; }
+        public BgaEvent[]? LayerEvents { get; set; }
 
         [JsonPropertyName("poor_events")]
-        public BgaEvent[] PoorEvents { get; set; }
+        public BgaEvent[]? PoorEvents { get; set; }
     }
 
     public class BgaHeader
@@ -169,7 +169,7 @@ namespace BmsParser.Bmson
         public int ID { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 
     public class BgaEvent
@@ -181,10 +181,10 @@ namespace BmsParser.Bmson
         public int ID { get; set; }
 
         [JsonPropertyName("id_set")]
-        public int[] IDSet { get; set; }
+        public int[] IDSet { get; set; } = [];
 
         [JsonPropertyName("condition")]
-        public string Condition { get; set; }
+        public string Condition { get; set; } = string.Empty;
 
         [JsonPropertyName("interval")]
         public int Interval { get; set; }
@@ -196,7 +196,7 @@ namespace BmsParser.Bmson
         public int ID { get; set; }
 
         [JsonPropertyName("sequence")]
-        public BmsonSequence[] Sequence { get; set; }
+        public BmsonSequence[] Sequence { get; set; } = [];
     }
 
     public class BmsonSequence
@@ -220,10 +220,10 @@ namespace BmsParser.Bmson
     public class MineChannel
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("notes")]
-        public BmsonMineNote[] Notes { get; set; }
+        public BmsonMineNote[] Notes { get; set; } = [];
     }
 
     public class BmsonMineNote

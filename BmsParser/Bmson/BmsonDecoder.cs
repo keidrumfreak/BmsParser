@@ -11,8 +11,6 @@ namespace BmsParser.Bmson
 {
     class BmsonDecoder : ChartDecoder
     {
-        private BmsModel model;
-
         private readonly SortedDictionary<int, TimeLineCache> tlcache = [];
 
         public BmsonDecoder(LNType lnType = LNType.LongNote)
@@ -20,12 +18,12 @@ namespace BmsParser.Bmson
             lntype = lnType;
         }
 
-        new public BmsModel Decode(string path)
+        new public BmsModel? Decode(string path)
         {
             return Decode(path, File.ReadAllBytes(path));
         }
 
-        public override BmsModel Decode(ChartInformation info)
+        public override BmsModel? Decode(ChartInformation info)
         {
             lntype = info.LNType;
             return Decode(info.Path);
@@ -52,15 +50,15 @@ namespace BmsParser.Bmson
         //    return null;
         //}
 
-        public BmsModel Decode(string path, byte[] bin)
+        public BmsModel? Decode(string path, byte[] bin)
         {
             //Logger.getGlobal().fine("BMSONファイル解析開始 :" + f.ToString());
             log.Clear();
             tlcache.Clear();
             var currnttime = DateTime.Now.Ticks;
             // BMS読み込み、ハッシュ値取得
-            model = new BmsModel(Mode.Beat7K);
-            Bmson bmson = null;
+            var model = new BmsModel(Mode.Beat7K);
+            Bmson? bmson = null;
             try
             {
                 using var mem = new MemoryStream(bin);
@@ -78,6 +76,8 @@ namespace BmsParser.Bmson
                 //e.printStackTrace();
                 return null;
             }
+            if (bmson == null || bmson.Info == null)
+                return null;
             model.Title = bmson.Info.Title;
             model.Subtitle = (bmson.Info.Subtitle ?? "")
             + (bmson.Info.Subtitle != null && bmson.Info.Subtitle.Length > 0 && bmson.Info.ChartName != null
@@ -213,7 +213,7 @@ namespace BmsParser.Bmson
                 for (var i = 0; i < Length; i++)
                 {
                     var n = sc.Notes[i];
-                    BmsonNote next = null;
+                    BmsonNote? next = null;
                     for (var j = i + 1; j < Length; j++)
                         if (sc.Notes[j].Y > n.Y)
                         {
@@ -239,7 +239,7 @@ namespace BmsParser.Bmson
                         {
                             var section = n.Y / resolution;
                             foreach (var ln in lnlist[key])
-                                if (section == ln.Pair.Section)
+                                if (section == ln.Pair?.Section)
                                 {
                                     ln.Pair.Wav = id;
                                     ln.Pair.MicroStarttime = starttime;
@@ -258,7 +258,7 @@ namespace BmsParser.Bmson
                         {
                             var section = n.Y / resolution;
                             foreach (var ln in lnlist[key])
-                                if (ln.Section < section && section <= ln.Pair.Section)
+                                if (ln.Section < section && section <= ln.Pair?.Section)
                                 {
                                     insideln = true;
                                     break;
@@ -307,7 +307,7 @@ namespace BmsParser.Bmson
                                     tl.SetNote(key, ln);
                                     // ln.setDuration(end.getTime() -
                                     // start.getTime());
-                                    LongNote lnend = null;
+                                    LongNote? lnend = null;
                                     foreach (var up in lnup)
                                         if (up.Key.Y == n.Y + n.L && up.Key.X == n.X)
                                         {
@@ -325,11 +325,10 @@ namespace BmsParser.Bmson
                                 }
                             }
                         }
-                        else
-                                // 通常ノート
-                                if (tl.ExistNote(key))
-                            if (tl.GetNote(key) is NormalNote)
-                                tl.GetNote(key).AddLayeredNote(new NormalNote(id, starttime, duration));
+                        // 通常ノート
+                        else if (tl.ExistNote(key))
+                            if (tl.GetNote(key) is NormalNote note)
+                                note.AddLayeredNote(new NormalNote(id, starttime, duration));
                             else
                                 log.Add(new DecodeLog(State.Warning,
                                         "同一の位置にノートが複数定義されています - x :  " + n.X + " y : " + n.Y));
@@ -376,7 +375,7 @@ namespace BmsParser.Bmson
                         {
                             var section = n.Y / resolution;
                             foreach (var ln in lnlist[key])
-                                if (ln.Section < section && section <= ln.Pair.Section)
+                                if (ln.Section < section && section <= ln.Pair?.Section)
                                 {
                                     insideln = true;
                                     break;
@@ -417,7 +416,7 @@ namespace BmsParser.Bmson
                             for (var i = 0; i < sequence.Length; i++)
                             {
                                 var seq = n.Sequence[i];
-                                if (seq.ID != int.MinValue)
+                                if (seq.ID.HasValue)
                                     sequence[i] = new Sequence(seq.Time, seq.ID.Value);
                                 else
                                     sequence[i] = new Sequence(seq.Time);
@@ -432,8 +431,7 @@ namespace BmsParser.Bmson
                     {
                         var idset = n.IDSet ?? ([n.ID]);
                         var seqs = new Sequence[idset.Length][];
-                        Event @event = null;
-                        @event = (n.Condition ?? "") switch
+                        var @event = (n.Condition ?? "") switch
                         {
                             "play" => new Event(EventType.Play, n.Interval),
                             "miss" => new Event(EventType.Miss, n.Interval),
@@ -467,27 +465,27 @@ namespace BmsParser.Bmson
             model.ChartInformation = new ChartInformation(path, lntype, null);
             PrintLog(path);
             return model;
-        }
 
-        private Timeline getTimeLine(int y, double resolution)
-        {
-            // Timeをus単位にする場合はこのメソッド内部だけ変更すればOK
-            if (tlcache.TryGetValue(y, out var tlc))
-                return tlc.Timeline;
-
-            var le = tlcache.LastOrDefault(c => c.Key < y);
-            var bpm = le.Value.Timeline.Bpm;
-            var time = le.Value.Time + le.Value.Timeline.MicroStop
-                    + 240000.0 * 1000 * ((y - le.Key) / resolution) / bpm;
-
-            var tl = new Timeline(y / resolution, (long)time, model.Mode.Key)
+            Timeline getTimeLine(int y, double resolution)
             {
-                Bpm = bpm
-            };
-            tlcache.Put(y, new TimeLineCache(time, tl));
-            // System.out.println("y = " + y + " , bpm = " + bpm + " , time = " +
-            // tl.getTime());
-            return tl;
+                // Timeをus単位にする場合はこのメソッド内部だけ変更すればOK
+                if (tlcache.TryGetValue(y, out var tlc))
+                    return tlc.Timeline;
+
+                var le = tlcache.LastOrDefault(c => c.Key < y);
+                var bpm = le.Value.Timeline.Bpm;
+                var time = le.Value.Time + le.Value.Timeline.MicroStop
+                        + 240000.0 * 1000 * ((y - le.Key) / resolution) / bpm;
+
+                var tl = new Timeline(y / resolution, (long)time, model.Mode.Key)
+                {
+                    Bpm = bpm
+                };
+                tlcache.Put(y, new TimeLineCache(time, tl));
+                // System.out.println("y = " + y + " , bpm = " + bpm + " , time = " +
+                // tl.getTime());
+                return tl;
+            }
         }
     }
 }
