@@ -466,8 +466,8 @@ namespace BmsParser
                 SortedDictionary<Double, TimeLineCache> timelines = new SortedDictionary<Double, TimeLineCache>();
                 List<LongNote>[] lnlist = new List<LongNote>[model.Mode.Key];
                 LongNote[] lnendstatus = new LongNote[model.Mode.Key];
-                TimeLine basetl = new TimeLine(0, 0, model.Mode.Key);
-                basetl.setBPM(model.Bpm);
+                Timeline basetl = new Timeline(0, 0, model.Mode.Key);
+                basetl.                Bpm = model.Bpm;
                 timelines.put(0.0, new TimeLineCache(0.0, basetl));
                 foreach (Section section in sections)
                 {
@@ -475,7 +475,7 @@ namespace BmsParser
                 }
                 // Logger.getGlobal().info(
                 // "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
-                TimeLine[] tl = new TimeLine[timelines.Count];
+                Timeline[] tl = new Timeline[timelines.Count];
                 int tlcount = 0;
                 foreach (TimeLineCache tlc in timelines.Values)
                 {
@@ -484,7 +484,7 @@ namespace BmsParser
                 }
                 model.Timelines = tl;
 
-                if (tl[0].getBPM() == 0)
+                if (tl[0].Bpm == 0)
                 {
                     log.Add(new DecodeLog(ERROR, "開始BPMが定義されていないため、BMS解析に失敗しました"));
                     //Logger.getGlobal().severe(path + ":BMSファイル解析失敗: 開始BPMが定義されていません");
@@ -498,7 +498,7 @@ namespace BmsParser
                         log.Add(new DecodeLog(WARNING, "曲の終端までにLN終端定義されていないLNがあります。lane:" + (i + 1)));
                         if (lnendstatus[i].Section != Double.MinValue)
                         {
-                            timelines[lnendstatus[i].Section].timeline.setNote(i, null);
+                            timelines[lnendstatus[i].Section].timeline.SetNote(i, null);
                         }
                     }
                 }
@@ -513,7 +513,7 @@ namespace BmsParser
                 }
                 if (tl.Length > 0)
                 {
-                    if (tl[tl.Length - 1].getTime() >= model.LastTime + 30000)
+                    if (tl[tl.Length - 1].Time >= model.LastTime + 30000)
                     {
                         log.Add(new DecodeLog(WARNING, "最後のノート定義から30秒以上の余白があります"));
                     }

@@ -21,15 +21,15 @@ namespace BmsParser
         {
             var note = new List<Note>();
             var hnote = new List<Note>();
-            foreach (TimeLine tl in model.Timelines)
+            foreach (Timeline tl in model.Timelines)
             {
-                if (tl.existNote(lane))
+                if (tl.ExistNote(lane))
                 {
-                    note.Add(tl.getNote(lane));
+                    note.Add(tl.GetNote(lane));
                 }
-                if (tl.getHiddenNote(lane) != null)
+                if (tl.GetHiddenNote(lane) != null)
                 {
-                    hnote.Add(tl.getHiddenNote(lane));
+                    hnote.Add(tl.GetHiddenNote(lane));
                 }
             }
             notes = note.ToArray();

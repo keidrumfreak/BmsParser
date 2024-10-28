@@ -98,23 +98,23 @@ namespace BmsParser
         /// </summary>
         public int VolWav { get; set; }
 
-        public double MinBpm => new[] { Bpm }.Concat(Timelines.Select(t => t.getBPM())).Min();
+        public double MinBpm => new[] { Bpm }.Concat(Timelines.Select(t => t.Bpm)).Min();
 
-        public double MaxBpm => new[] { Bpm }.Concat(Timelines.Select(t => t.getBPM())).Max();
+        public double MaxBpm => new[] { Bpm }.Concat(Timelines.Select(t => t.Bpm)).Max();
 
         /// <summary>
         /// 時間とTimeLineのマッピング
         /// </summary>
-        public TimeLine[] Timelines { get; set; } = [];
+        public Timeline[] Timelines { get; set; } = [];
 
-        public IEnumerable<int> AllTimes => Timelines.Select(t => t.getTime()).ToArray();
+        public IEnumerable<int> AllTimes => Timelines.Select(t => t.Time).ToArray();
 
         public long LastNoteMilliTime
         {
             get
             {
-                var t = Timelines.Where(tl => Enumerable.Range(0, mode.Key).Any(lane => tl.existNote(lane)));
-                return t.Any() ? t.Max(tl => tl.getMilliTime()) : 0;
+                var t = Timelines.Where(tl => Enumerable.Range(0, mode.Key).Any(lane => tl.ExistNote(lane)));
+                return t.Any() ? t.Max(tl => tl.MilliTime) : 0;
             }
         }
 
@@ -125,12 +125,12 @@ namespace BmsParser
             get
             {
                 var t = Timelines.Where(tl => Enumerable.Range(0, mode.Key)
-                .Any(lane => tl.existNote(lane)
-                || tl.getHiddenNote(lane) != null
-                || tl.getBackGroundNotes().Length > 0
-                || tl.getBGA() != -1
-                || tl.getLayer() != -1));
-                return t.Any() ? t.Max(tl => tl.getMilliTime()) : 0;
+                .Any(lane => tl.ExistNote(lane)
+                || tl.GetHiddenNote(lane) != null
+                || tl.BackGroundNotes.Length > 0
+                || tl.BgaID != -1
+                || tl.LayerID != -1));
+                return t.Any() ? t.Max(tl => tl.MilliTime) : 0;
             }
         }
 
@@ -166,7 +166,7 @@ namespace BmsParser
                 mode = value;
                 foreach (var tl in Timelines)
                 {
-                    tl.setLaneCount(mode.Key);
+                    tl.                    LaneCount = mode.Key;
                 }
             }
         }
@@ -200,15 +200,15 @@ namespace BmsParser
 
         public bool ContainsUndefinedLongNote => Timelines
             .Any(t => Enumerable.Range(0, Mode.Key)
-                .Any(i => t.getNote(i) != null && t.getNote(i) is LongNote ln && ln.Type == LNMode.Undefined));
+                .Any(i => t.GetNote(i) != null && t.GetNote(i) is LongNote ln && ln.Type == LNMode.Undefined));
 
         public bool ContainsLongNote => Timelines
             .Any(tl => Enumerable.Range(0, Mode.Key)
-                .Any(i => tl.getNote(i) is LongNote));
+                .Any(i => tl.GetNote(i) is LongNote));
 
         public bool ContainsMineNote => Timelines
             .Any(tl => Enumerable.Range(0, Mode.Key)
-                .Any(i => tl.getNote(i) is MineNote));
+                .Any(i => tl.GetNote(i) is MineNote));
 
         public string Preview { get; set; } = string.Empty;
 
@@ -272,20 +272,20 @@ namespace BmsParser
             foreach (var tl in Timelines)
             {
                 tlsb.Clear();
-                tlsb.Append($"{tl.getTime()}:");
+                tlsb.Append($"{tl.Time}:");
                 var write = false;
-                if (nowBpm != tl.getBPM())
+                if (nowBpm != tl.Bpm)
                 {
-                    nowBpm = tl.getBPM();
+                    nowBpm = tl.Bpm;
                     tlsb.Append($"B({nowBpm})");
                     write = true;
                 }
-                if (tl.getStop() != 0)
+                if (tl.Stop != 0)
                 {
-                    tlsb.Append($"S({tl.getStop()})");
+                    tlsb.Append($"S({tl.Stop})");
                     write = true;
                 }
-                if (tl.getSectionLine())
+                if (tl.IsSectionLine)
                 {
                     tlsb.Append('L');
                     write = true;
@@ -294,7 +294,7 @@ namespace BmsParser
                 tlsb.Append('[');
                 for (var lane = 0; lane < mode.Key; lane++)
                 {
-                    var n = tl.getNote(lane);
+                    var n = tl.GetNote(lane);
                     if (n is NormalNote)
                     {
                         tlsb.Append('1');
@@ -358,28 +358,28 @@ namespace BmsParser
                 }
             }
 
-            return Timelines.Where(tl => start <= tl.getTime() && tl.getTime() < end)
+            return Timelines.Where(tl => start <= tl.Time && tl.Time < end)
                 .Sum(tl => type switch
                 {
-                    NoteType.All => tl.getTotalNotes(LNType),
-                    NoteType.Key => nlane.Count(lane => tl.existNote(lane) && tl.getNote(lane) is NormalNote),
+                    NoteType.All => tl.GetTotalNotes(LNType),
+                    NoteType.Key => nlane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is NormalNote),
                     NoteType.LongKey => nlane
-                        .Count(lane => tl.existNote(lane) && tl.getNote(lane) is LongNote ln
+                        .Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is LongNote ln
                             && (ln.Type == LNMode.LongNote
                                 || ln.Type == LNMode.ChargeNote
                                 || ln.Type == LNMode.HellChargeNote
                                 || ln.Type == LNMode.Undefined && LNType != LNType.LongNote
                                 || !ln.IsEnd)),
-                    NoteType.Scratch => slane.Count(lane => tl.existNote(lane) && tl.getNote(lane) is NormalNote),
+                    NoteType.Scratch => slane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is NormalNote),
                     NoteType.LongScratch => slane
-                        .Count(lane => tl.existNote(lane) && tl.getNote(lane) is LongNote ln
+                        .Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is LongNote ln
                             && (ln.Type == LNMode.LongNote
                                 || ln.Type == LNMode.ChargeNote
                                 || ln.Type == LNMode.HellChargeNote
                                 || ln.Type == LNMode.Undefined && LNType != LNType.LongNote
                                 || !ln.IsEnd)),
-                    NoteType.Mine => nlane.Count(lane => tl.existNote(lane) && tl.getNote(lane) is MineNote)
-                        + slane.Count(lane => tl.existNote(lane) && tl.getNote(lane) is MineNote),
+                    NoteType.Mine => nlane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is MineNote)
+                        + slane.Count(lane => tl.ExistNote(lane) && tl.GetNote(lane) is MineNote),
                     _ => 0
                 });
         }

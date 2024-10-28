@@ -298,8 +298,8 @@ namespace BmsParser
                (model.Mode == Mode.Beat7K || model.Mode == Mode.Beat14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
             int @base = model.Base;
             // 小節線追加
-            TimeLine basetl = getTimeLine(sectionnum);
-            basetl.setSectionLine(true);
+            Timeline basetl = getTimeLine(sectionnum);
+            basetl.IsSectionLine = true;
 
             if (poor.Length > 0)
             {
@@ -318,7 +318,7 @@ namespace BmsParser
                     }
                 }
                 poors[poors.Length - 1] = new Layer.Sequence(poortime);
-                basetl.setEventlayer(new Layer[] { new Layer(new Layer.Event(EventType.MISS, 1), new Layer.Sequence[][] { poors }) });
+                basetl.EventLayer = (new Layer[] { new Layer(new Layer.Event(EventType.MISS, 1), new Layer.Sequence[][] { poors }) });
             }
             // BPM変化。ストップシーケンステーブル準備
             var stops = stop.GetEnumerator();
@@ -335,18 +335,18 @@ namespace BmsParser
                 double sc = !sce.Equals(default(KeyValuePair<double, double>)) ? sce.Key : 2;
                 if (sc <= st && sc <= bc)
                 {
-                    getTimeLine(sectionnum + sc * rate).setScroll(sce.Value);
+                    getTimeLine(sectionnum + sc * rate).Scroll = sce.Value;
                     sce = scrolls.MoveNext() ? scrolls.Current : default;
                 }
                 else if (bc <= st)
                 {
-                    getTimeLine(sectionnum + bc * rate).setBPM(bce.Value);
+                    getTimeLine(sectionnum + bc * rate).Bpm = bce.Value;
                     bce = bpms.MoveNext() ? bpms.Current : default;
                 }
                 else if (st <= 1)
                 {
-                    TimeLine tl = getTimeLine(sectionnum + ste.Key * rate);
-                    tl.setStop((long)(1000.0 * 1000 * 60 * 4 * ste.Value / (tl.getBPM())));
+                    Timeline tl = getTimeLine(sectionnum + ste.Key * rate);
+                    tl.MicroStop = (long)(1000.0 * 1000 * 60 * 4 * ste.Value / (tl.Bpm));
                     ste = stops.MoveNext() ? stops.Current : default;
                 }
             }
@@ -403,14 +403,14 @@ namespace BmsParser
                 switch (channel)
                 {
                     case P1_KEY_BASE:
-                        this.processData(line, (pos, data) =>
+                        this.processData(line, (Action<double, int>)((pos, data) =>
                         {
                             // normal note, lnobj
-                            TimeLine tl = getTimeLine(sectionnum + rate * pos);
-                            if (tl.existNote(key))
+                            Timeline tl = getTimeLine(sectionnum + rate * pos);
+                            if (tl.ExistNote(key))
                             {
                                 log.Add(new DecodeLog(WARNING, "通常ノート追加時に衝突が発生しました : " + (key + 1) + ":"
-                                        + tl.getTime()));
+                                        + tl.Time));
                             }
                             if (data == lnobj)
                             {
@@ -418,22 +418,22 @@ namespace BmsParser
                                 // TODO 高速化のために直前のノートを記録しておく
                                 foreach (var e in tlcache)
                                 {
-                                    if (e.Key >= tl.getSection())
+                                    if (e.Key >= tl.Section)
                                     {
                                         continue;
                                     }
-                                    TimeLine tl2 = e.Value.timeline;
-                                    if (tl2.existNote(key))
+                                    Timeline tl2 = e.Value.timeline;
+                                    if (tl2.ExistNote(key))
                                     {
-                                        Note note = tl2.getNote(key);
+                                        Note note = tl2.GetNote(key);
                                         if (note is NormalNote)
                                         {
                                             // LNOBJの直前のノートをLNに差し替える
                                             LongNote ln = new LongNote(note.Wav);
                                             ln.Type = lnmode;
-                                            tl2.setNote(key, ln);
+                                            tl2.SetNote(key, ln);
                                             LongNote lnend = new LongNote(-2);
-                                            tl.setNote(key, lnend);
+                                            tl.SetNote(key, lnend);
                                             ln.Pair = lnend;
 
                                             if (lnlist[key] == null)
@@ -446,10 +446,10 @@ namespace BmsParser
                                         else if (note is LongNote && ((LongNote)note).Pair == null)
                                         {
                                             log.Add(new DecodeLog(WARNING,
-                                                    "LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
-                                                            + tl2.getSection() + " - " + tl.getSection()));
+                                                    (string)("LNレーンで開始定義し、LNオブジェクトで終端定義しています。レーン: " + (key + 1) + " - Section : "
+                                                            + tl2.Section + " - " + tl.Section)));
                                             LongNote lnend = new LongNote(-2);
-                                            tl.setNote(key, lnend);
+                                            tl.SetNote(key, lnend);
                                             ((LongNote)note).Pair = lnend;
 
                                             if (lnlist[key] == null)
@@ -463,7 +463,7 @@ namespace BmsParser
                                         else
                                         {
                                             log.Add(new DecodeLog(WARNING, "LNオブジェクトの対応が取れません。レーン: " + key
-                                                    + " - Time(ms):" + tl2.getTime()));
+                                                    + " - Time(ms):" + tl2.Time));
                                             break;
                                         }
                                     }
@@ -471,26 +471,26 @@ namespace BmsParser
                             }
                             else
                             {
-                                tl.setNote(key, new NormalNote(wavmap[data]));
+                                tl.SetNote(key, new NormalNote(wavmap[data]));
                             }
-                        });
+                        }));
                         break;
 
                     case P1_INVISIBLE_KEY_BASE:
                         this.processData(line, (pos, data) =>
                         {
-                            getTimeLine(sectionnum + rate * pos).setHiddenNote(key, new NormalNote(wavmap[data]));
+                            getTimeLine(sectionnum + rate * pos).SetHiddenNote(key, new NormalNote(wavmap[data]));
                         });
                         break;
                     case P1_LONG_KEY_BASE:
                         this.processData(line, (Action<double, int>)((pos, data) =>
                         {
                             // long note
-                            TimeLine tl = getTimeLine(sectionnum + rate * pos);
+                            Timeline tl = getTimeLine(sectionnum + rate * pos);
                             bool insideln = false;
                             if (!insideln && lnlist[key] != null)
                             {
-                                double section = tl.getSection();
+                                double section = tl.Section;
                                 foreach (LongNote ln in lnlist[key])
                                 {
                                     if (ln.Section <= section && section <= ln.Pair.Section)
@@ -506,18 +506,18 @@ namespace BmsParser
                                 // LN処理
                                 if (startln[key] == null)
                                 {
-                                    if (tl.existNote(key))
+                                    if (tl.ExistNote(key))
                                     {
-                                        Note note = tl.getNote(key);
+                                        Note note = tl.GetNote(key);
                                         log.Add(new DecodeLog(WARNING, "LN開始位置に通常ノートが存在します。レーン: "
-                                                + (key + 1) + " - Time(ms):" + tl.getTime()));
+                                                + (key + 1) + " - Time(ms):" + tl.Time));
                                         if (note is NormalNote && note.Wav != wavmap[data])
                                         {
-                                            tl.addBackGroundNote(note);
+                                            tl.AddBackGroundNote(note);
                                         }
                                     }
                                     LongNote ln = new LongNote(wavmap[data]);
-                                    tl.setNote(key, ln);
+                                    tl.SetNote(key, ln);
                                     startln[key] = ln;
                                 }
                                 else if (startln[(int)key].Section == double.MinValue)
@@ -529,18 +529,18 @@ namespace BmsParser
                                     // LN終端処理
                                     foreach (var e in tlcache)
                                     {
-                                        if (e.Key >= tl.getSection())
+                                        if (e.Key >= tl.Section)
                                         {
                                             continue;
                                         }
 
-                                        TimeLine tl2 = e.Value.timeline;
-                                        if (tl2.getSection() == startln[(int)key].Section)
+                                        Timeline tl2 = e.Value.timeline;
+                                        if (tl2.Section == startln[(int)key].Section)
                                         {
                                             Note note = startln[key];
                                             ((LongNote)note).Type = lnmode;
                                             LongNote noteend = new LongNote(startln[key].Wav != wavmap[data] ? wavmap[data] : -2);
-                                            tl.setNote(key, noteend);
+                                            tl.SetNote(key, noteend);
                                             ((LongNote)note).Pair = noteend;
                                             if (lnlist[key] == null)
                                             {
@@ -551,15 +551,15 @@ namespace BmsParser
                                             startln[key] = null;
                                             break;
                                         }
-                                        else if (tl2.existNote(key))
+                                        else if (tl2.ExistNote(key))
                                         {
-                                            Note note = tl2.getNote(key);
+                                            Note note = tl2.GetNote(key);
                                             log.Add(new DecodeLog(WARNING, "LN内に通常ノートが存在します。レーン: "
-                                                    + (key + 1) + " - Time(ms):" + tl2.getTime()));
-                                            tl2.setNote(key, null);
+                                                    + (key + 1) + " - Time(ms):" + tl2.Time));
+                                            tl2.SetNote(key, null);
                                             if (note is NormalNote)
                                             {
-                                                tl2.addBackGroundNote(note);
+                                                tl2.AddBackGroundNote(note);
                                             }
                                         }
                                     }
@@ -573,17 +573,17 @@ namespace BmsParser
                                     ln.Section = double.MinValue;
                                     startln[key] = ln;
                                     log.Add(new DecodeLog(WARNING, "LN内にLN開始ノートを定義しようとしています : "
-                                            + (key + 1) + " - Section : " + tl.getSection() + " - Time(ms):" + tl.getTime()));
+                                            + (key + 1) + " - Section : " + tl.Section + " - Time(ms):" + tl.Time));
                                 }
                                 else
                                 {
                                     if (startln[(int)key].Section != double.MinValue)
                                     {
-                                        tlcache[startln[(int)key].Section].timeline.setNote(key, null);
+                                        tlcache[startln[(int)key].Section].timeline.SetNote(key, null);
                                     }
                                     startln[key] = null;
                                     log.Add(new DecodeLog(WARNING, "LN内にLN終端ノートを定義しようとしています : "
-                                            + (key + 1) + " - Section : " + tl.getSection() + " - Time(ms):" + tl.getTime()));
+                                            + (key + 1) + " - Section : " + tl.Section + " - Time(ms):" + tl.Time));
                                 }
                             }
                         }));
@@ -593,11 +593,11 @@ namespace BmsParser
                         // mine note
                         this.processData(line, (Action<double, int>)((pos, data) =>
                         {
-                            TimeLine tl = getTimeLine(sectionnum + rate * pos);
-                            bool insideln = tl.existNote(key);
+                            Timeline tl = getTimeLine(sectionnum + rate * pos);
+                            bool insideln = tl.ExistNote(key);
                             if (!insideln && lnlist[key] != null)
                             {
-                                double section = tl.getSection();
+                                double section = tl.Section;
                                 foreach (LongNote ln in lnlist[key])
                                 {
                                     if (ln.Section <= section && section <= ln.Pair.Section)
@@ -614,12 +614,12 @@ namespace BmsParser
                                 {
                                     data = ChartDecoder.parseInt36(ChartDecoder.toBase62(data), 0); //間違った数値を再計算、62進数文字に戻して36進数数値化。
                                 }
-                                tl.setNote(key, new MineNote(wavmap[0], data));
+                                tl.SetNote(key, new MineNote(wavmap[0], data));
                             }
                             else
                             {
                                 log.Add(new DecodeLog(WARNING, "地雷ノート追加時に衝突が発生しました : " + (key + 1) + ":"
-                                        + tl.getTime()));
+                                        + tl.Time));
                             }
                         }));
                         break;
@@ -627,19 +627,19 @@ namespace BmsParser
                         // BGレーン
                         this.processData(line, (pos, data) =>
                         {
-                            getTimeLine(sectionnum + rate * pos).addBackGroundNote(new NormalNote(wavmap[data]));
+                            getTimeLine(sectionnum + rate * pos).AddBackGroundNote(new NormalNote(wavmap[data]));
                         });
                         break;
                     case BGA_PLAY:
                         this.processData(line, (pos, data) =>
                         {
-                            getTimeLine(sectionnum + rate * pos).setBGA(bgamap[data]);
+                            getTimeLine(sectionnum + rate * pos).BgaID = bgamap[data];
                         });
                         break;
                     case LAYER_PLAY:
                         this.processData(line, (pos, data) =>
                         {
-                            getTimeLine(sectionnum + rate * pos).setLayer(bgamap[data]);
+                            getTimeLine(sectionnum + rate * pos).LayerID = bgamap[data];
                         });
                         break;
 
@@ -647,19 +647,19 @@ namespace BmsParser
             }
         }
 
-        private TimeLine getTimeLine(double section)
+        private Timeline getTimeLine(double section)
         {
             if (tlcache.TryGetValue(section, out var tlc))
                 return tlc.timeline;
 
             var le = tlcache.LastOrDefault(c => c.Key < section);
-            double scroll = le.Value.timeline.getScroll();
-            double bpm = le.Value.timeline.getBPM();
-            double time = le.Value.time + le.Value.timeline.getMicroStop() + (240000.0 * 1000 * (section - le.Key)) / bpm;
+            double scroll = le.Value.timeline.Scroll;
+            double bpm = le.Value.timeline.Bpm;
+            double time = le.Value.time + le.Value.timeline.MicroStop + (240000.0 * 1000 * (section - le.Key)) / bpm;
 
-            TimeLine tl = new TimeLine(section, (long)time, model.Mode.Key);
-            tl.setBPM(bpm);
-            tl.setScroll(scroll);
+            Timeline tl = new Timeline(section, (long)time, model.Mode.Key);
+            tl.Bpm = bpm;
+            tl.Scroll = scroll;
             tlcache.put(section, new TimeLineCache(time, tl));
             return tl;
         }

@@ -30,7 +30,7 @@ namespace BmsParser
 
         public int PlayTime
         {
-            get => (int)MicroPlayTime / 1000;
+            get => (int)(MicroPlayTime / 1000);
             set => MicroPlayTime = value * 1000;
         }
 
@@ -46,7 +46,7 @@ namespace BmsParser
         /// </summary>
         public double Section { get; set; }
 
-        public int Time => (int)MicroTime / 1000;
+        public int Time => (int)(MicroTime / 1000);
 
         public long MilliTime => MicroTime / 1000;
 

@@ -9,36 +9,36 @@ namespace BmsParser
 {
     public class EventLane
     {
-        private TimeLine[] sections;
+        private Timeline[] sections;
         private int sectionbasepos;
         private int sectionseekpos;
 
-        private TimeLine[] bpms;
+        private Timeline[] bpms;
         private int bpmbasepos;
         private int bpmseekpos;
 
-        private TimeLine[] stops;
+        private Timeline[] stops;
         private int stopbasepos;
         private int stopseekpos;
 
         public EventLane(BmsModel model)
         {
-            var section = new List<TimeLine>();
-            var bpm = new List<TimeLine>();
-            var stop = new List<TimeLine>();
+            var section = new List<Timeline>();
+            var bpm = new List<Timeline>();
+            var stop = new List<Timeline>();
 
-            TimeLine prev = null;
-            foreach (TimeLine tl in model.Timelines)
+            Timeline prev = null;
+            foreach (Timeline tl in model.Timelines)
             {
-                if (tl.getSectionLine())
+                if (tl.IsSectionLine)
                 {
                     section.Add(tl);
                 }
-                if (tl.getBPM() != (prev != null ? prev.getBPM() : model.Bpm))
+                if (tl.Bpm != (prev != null ? prev.Bpm : model.Bpm))
                 {
                     bpm.Add(tl);
                 }
-                if (tl.getStop() != 0)
+                if (tl.Stop != 0)
                 {
                     stop.Add(tl);
                 }
@@ -49,22 +49,22 @@ namespace BmsParser
             stops = stop.ToArray();
         }
 
-        public TimeLine[] getSections()
+        public Timeline[] getSections()
         {
             return sections;
         }
 
-        public TimeLine[] getBpmChanges()
+        public Timeline[] getBpmChanges()
         {
             return bpms;
         }
 
-        public TimeLine[] getStops()
+        public Timeline[] getStops()
         {
             return stops;
         }
 
-        public TimeLine getSection()
+        public Timeline getSection()
         {
             if (sectionseekpos < sections.Length)
             {
@@ -73,7 +73,7 @@ namespace BmsParser
             return null;
         }
 
-        public TimeLine getBpm()
+        public Timeline getBpm()
         {
             if (bpmseekpos < bpms.Length)
             {
@@ -82,7 +82,7 @@ namespace BmsParser
             return null;
         }
 
-        public TimeLine getStop()
+        public Timeline getStop()
         {
             if (stopseekpos < stops.Length)
             {
@@ -100,17 +100,17 @@ namespace BmsParser
 
         public void mark(int time)
         {
-            for (; sectionbasepos < sections.Length - 1 && sections[sectionbasepos + 1].getTime() > time; sectionbasepos++)
+            for (; sectionbasepos < sections.Length - 1 && sections[sectionbasepos + 1].Time > time; sectionbasepos++)
                 ;
-            for (; sectionbasepos > 0 && sections[sectionbasepos].getTime() < time; sectionbasepos--)
+            for (; sectionbasepos > 0 && sections[sectionbasepos].Time < time; sectionbasepos--)
                 ;
-            for (; bpmbasepos < bpms.Length - 1 && bpms[bpmbasepos + 1].getTime() > time; bpmbasepos++)
+            for (; bpmbasepos < bpms.Length - 1 && bpms[bpmbasepos + 1].Time > time; bpmbasepos++)
                 ;
-            for (; bpmbasepos > 0 && bpms[bpmbasepos].getTime() < time; bpmbasepos--)
+            for (; bpmbasepos > 0 && bpms[bpmbasepos].Time < time; bpmbasepos--)
                 ;
-            for (; stopbasepos < stops.Length - 1 && stops[stopbasepos + 1].getTime() > time; stopbasepos++)
+            for (; stopbasepos < stops.Length - 1 && stops[stopbasepos + 1].Time > time; stopbasepos++)
                 ;
-            for (; stopbasepos > 0 && stops[stopbasepos].getTime() < time; stopbasepos--)
+            for (; stopbasepos > 0 && stops[stopbasepos].Time < time; stopbasepos--)
                 ;
             sectionseekpos = sectionbasepos;
             bpmseekpos = bpmbasepos;
