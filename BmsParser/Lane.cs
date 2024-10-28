@@ -9,11 +9,11 @@ namespace BmsParser
 {
     public class Lane
     {
-        private Note[] notes;
+        private readonly Note[] notes;
         private int notebasepos;
         private int noteseekpos;
 
-        private Note[] hiddens;
+        private readonly Note[] hiddens;
         private int hiddenbasepos;
         private int hiddenseekpos;
 
@@ -32,45 +32,45 @@ namespace BmsParser
                     hnote.Add(tl.GetHiddenNote(lane));
                 }
             }
-            notes = note.ToArray();
-            hiddens = hnote.ToArray();
+            notes = [.. note];
+            hiddens = [.. hnote];
         }
 
-        public Note[] getNotes()
-        {
-            return notes;
-        }
+        public Note[] Notes => notes;
 
-        public Note[] getHiddens()
-        {
-            return hiddens;
-        }
+        public Note[] Hiddens => hiddens;
 
-        public Note getNote()
+        public Note? Note
         {
-            if (noteseekpos < notes.Length)
+            get
             {
-                return notes[noteseekpos++];
+                if (noteseekpos < notes.Length)
+                {
+                    return notes[noteseekpos++];
+                }
+                return null;
             }
-            return null;
         }
 
-        public Note getHidden()
+        public Note? Hidden
         {
-            if (hiddenseekpos < hiddens.Length)
+            get
             {
-                return hiddens[hiddenseekpos++];
+                if (hiddenseekpos < hiddens.Length)
+                {
+                    return hiddens[hiddenseekpos++];
+                }
+                return null;
             }
-            return null;
         }
 
-        public void reset()
+        public void Reset()
         {
             noteseekpos = notebasepos;
             hiddenseekpos = hiddenbasepos;
         }
 
-        public void mark(int time)
+        public void Mark(int time)
         {
             for (; notebasepos < notes.Length - 1 && notes[notebasepos + 1].Time < time; notebasepos++)
                 ;

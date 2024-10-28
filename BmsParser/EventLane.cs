@@ -9,15 +9,15 @@ namespace BmsParser
 {
     public class EventLane
     {
-        private Timeline[] sections;
+        private readonly Timeline[] sections;
         private int sectionbasepos;
         private int sectionseekpos;
 
-        private Timeline[] bpms;
+        private readonly Timeline[] bpms;
         private int bpmbasepos;
         private int bpmseekpos;
 
-        private Timeline[] stops;
+        private readonly Timeline[] stops;
         private int stopbasepos;
         private int stopseekpos;
 
@@ -27,7 +27,7 @@ namespace BmsParser
             var bpm = new List<Timeline>();
             var stop = new List<Timeline>();
 
-            Timeline prev = null;
+            Timeline? prev = null;
             foreach (Timeline tl in model.Timelines)
             {
                 if (tl.IsSectionLine)
@@ -44,61 +44,61 @@ namespace BmsParser
                 }
                 prev = tl;
             }
-            sections = section.ToArray();
-            bpms = bpm.ToArray();
-            stops = stop.ToArray();
+            sections = [.. section];
+            bpms = [.. bpm];
+            stops = [.. stop];
         }
 
-        public Timeline[] getSections()
-        {
-            return sections;
-        }
+        public Timeline[] Sections => sections;
 
-        public Timeline[] getBpmChanges()
-        {
-            return bpms;
-        }
+        public Timeline[] BpmChanges => bpms;
 
-        public Timeline[] getStops()
-        {
-            return stops;
-        }
+        public Timeline[] Stops => stops;
 
-        public Timeline getSection()
+        public Timeline? Section
         {
-            if (sectionseekpos < sections.Length)
+            get
             {
-                return sections[sectionseekpos++];
+                if (sectionseekpos < sections.Length)
+                {
+                    return sections[sectionseekpos++];
+                }
+                return null;
             }
-            return null;
         }
 
-        public Timeline getBpm()
+        public Timeline? Bpm
         {
-            if (bpmseekpos < bpms.Length)
+            get
             {
-                return bpms[bpmseekpos++];
+                if (bpmseekpos < bpms.Length)
+                {
+                    return bpms[bpmseekpos++];
+                }
+                return null;
             }
-            return null;
         }
 
-        public Timeline getStop()
+        public Timeline? Stop
         {
-            if (stopseekpos < stops.Length)
+            get
             {
-                return stops[stopseekpos++];
+                if (stopseekpos < stops.Length)
+                {
+                    return stops[stopseekpos++];
+                }
+                return null;
             }
-            return null;
         }
 
-        public void reset()
+        public void Reset()
         {
             sectionseekpos = sectionbasepos;
             bpmseekpos = bpmbasepos;
             stopseekpos = stopbasepos;
         }
 
-        public void mark(int time)
+        public void Mark(int time)
         {
             for (; sectionbasepos < sections.Length - 1 && sections[sectionbasepos + 1].Time > time; sectionbasepos++)
                 ;
