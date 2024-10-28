@@ -19,7 +19,7 @@ namespace BmsParser
 
         public BmsDecoder(LNType lnType = LNType.LongNote)
         {
-            lntype = lnType;
+            LNType = lnType;
         }
 
         new public BmsModel? Decode(string path)
@@ -38,7 +38,7 @@ namespace BmsParser
         {
             try
             {
-                this.lntype = info.LNType;
+                this.LNType = info.LNType;
                 return decode(info.Path, File.ReadAllBytes(info.Path), info.Path.ToString().ToLower().EndsWith(".pms"), info.SelectedRandoms);
             }
             catch (IOException)
@@ -114,12 +114,13 @@ namespace BmsParser
             try
             {
                 using var mem = new MemoryStream(data);
-                using var br = new StreamReader(mem);
+                using var reader = new StreamReader(mem, Encoding.GetEncoding("shift-jis"), true);
+                var input = reader.ReadToEnd();
+                var fileLines = input.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
                 //model.Mode = ispms ? Mode.Popn9K : Mode.Beat5K;
                 // Logger.getGlobal().info(
                 // "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
 
-                string? line = null;
                 wavlist.Clear();
                 Array.Fill(wm, -2);
                 bgalist.Clear();
@@ -134,7 +135,7 @@ namespace BmsParser
                 crandom.Clear();
 
                 skip.Clear();
-                while ((line = br.ReadLine()) != null)
+                foreach (var line in fileLines)
                 {
                     if (line.Length < 2)
                     {
@@ -517,7 +518,7 @@ namespace BmsParser
                     }
                 }
 
-                model.ChartInformation = new ChartInformation(path, lntype, selectedRandom);
+                model.ChartInformation = new ChartInformation(path, LNType, selectedRandom);
                 return model;
             }
             catch (IOException)

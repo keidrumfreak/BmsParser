@@ -15,7 +15,7 @@ namespace BmsParser.Bmson
 
         public BmsonDecoder(LNType lnType = LNType.LongNote)
         {
-            lntype = lnType;
+            LNType = lnType;
         }
 
         new public BmsModel? Decode(string path)
@@ -25,7 +25,7 @@ namespace BmsParser.Bmson
 
         public override BmsModel? Decode(ChartInformation info)
         {
-            lntype = info.LNType;
+            LNType = info.LNType;
             return Decode(info.Path);
         }
 
@@ -462,7 +462,7 @@ namespace BmsParser.Bmson
             //Logger.getGlobal().fine("BMSONファイル解析完了 :" + f.ToString() + " - TimeLine数:" + tlcache.size() + " 時間(ms):"
             //        + (System.currentTimeMillis() - currnttime));
 
-            model.ChartInformation = new ChartInformation(path, lntype, null);
+            model.ChartInformation = new ChartInformation(path, LNType, null);
             return model;
 
             Timeline getTimeLine(int y, double resolution)

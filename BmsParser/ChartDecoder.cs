@@ -16,7 +16,7 @@ namespace BmsParser
     /// </summary>
     public abstract class ChartDecoder
     {
-        protected LNType lntype;
+        protected LNType LNType { get; set; }
 
         protected List<DecodeLog> log = [];
 
@@ -41,7 +41,7 @@ namespace BmsParser
          */
         public BmsModel? Decode(string path)
         {
-            return Decode(new ChartInformation(path, lntype, null));
+            return Decode(new ChartInformation(path, LNType, null));
         }
 
         /**
