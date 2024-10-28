@@ -129,7 +129,7 @@ namespace BmsParser
 
             model.Bpm = bmson.Info.InitBpm;
             model.PlayLevel = bmson.Info.Level.ToString();
-            Mode mode = Mode.getMode(bmson.Info.ModeHint);
+            Mode mode = Mode.GetMode(bmson.Info.ModeHint);
             if (mode != null)
             {
                 model.Mode = mode;
@@ -137,37 +137,37 @@ namespace BmsParser
             else
             {
                 log.Add(new DecodeLog(WARNING, "非対応のmode_hintです。mode_hint = " + bmson.Info.ModeHint));
-                model.Mode = Mode.BEAT_7K;
+                model.Mode = Mode.Beat7K;
             }
             if (bmson.Info.LNType > 0 && bmson.Info.LNType <= 3)
             {
                 model.LNMode = (LNMode)bmson.Info.LNType;
             }
             int[] keyassign;
-            if (model.Mode == BEAT_5K)
+            if (model.Mode == Beat5K)
             {
                 keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5 };
             }
-            else if (model.Mode == BEAT_10K)
+            else if (model.Mode == Beat10K)
             {
                 keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5, 6, 7, 8, 9, 10, -1, -1, 11 };
             }
             else
             {
-                keyassign = new int[model.Mode.key];
+                keyassign = new int[model.Mode.Key];
                 for (int i = 0; i < keyassign.Length; i++)
                 {
                     keyassign[i] = i;
                 }
             }
-            List<LongNote>[] lnlist = new List<LongNote>[model.Mode.key];
+            List<LongNote>[] lnlist = new List<LongNote>[model.Mode.Key];
             Dictionary<BmsonNote, LongNote> lnup = new Dictionary<BmsonNote, LongNote>();
 
             model.Banner = bmson.Info.BannerImage;
             model.BackBmp = bmson.Info.BackImage;
             model.StageFile = bmson.Info.EyecatchImage;
             model.Preview = bmson.Info.PreviewMusic;
-            TimeLine basetl = new TimeLine(0, 0, model.Mode.key);
+            TimeLine basetl = new TimeLine(0, 0, model.Mode.Key);
             basetl.setBPM(model.Bpm);
             tlcache.put(0, new TimeLineCache(0.0, basetl));
 
@@ -602,7 +602,7 @@ namespace BmsParser
             double time = le.Value.time + le.Value.timeline.getMicroStop()
                     + (240000.0 * 1000 * ((y - le.Key) / resolution)) / bpm;
 
-            TimeLine tl = new TimeLine(y / resolution, (long)time, model.Mode.key);
+            TimeLine tl = new TimeLine(y / resolution, (long)time, model.Mode.Key);
             tl.setBPM(bpm);
             tlcache.put(y, new TimeLineCache(time, tl));
             // System.out.println("y = " + y + " , bpm = " + bpm + " , time = " +

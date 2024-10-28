@@ -113,7 +113,7 @@ namespace BmsParser
         {
             get
             {
-                var t = Timelines.Where(tl => Enumerable.Range(0, mode.key).Any(lane => tl.existNote(lane)));
+                var t = Timelines.Where(tl => Enumerable.Range(0, mode.Key).Any(lane => tl.existNote(lane)));
                 return t.Any() ? t.Max(tl => tl.getMilliTime()) : 0;
             }
         }
@@ -124,7 +124,7 @@ namespace BmsParser
         {
             get
             {
-                var t = Timelines.Where(tl => Enumerable.Range(0, mode.key)
+                var t = Timelines.Where(tl => Enumerable.Range(0, mode.Key)
                 .Any(lane => tl.existNote(lane)
                 || tl.getHiddenNote(lane) != null
                 || tl.getBackGroundNotes().Length > 0
@@ -167,7 +167,7 @@ namespace BmsParser
                 mode = value;
                 foreach (var tl in Timelines)
                 {
-                    tl.setLaneCount(mode.key);
+                    tl.setLaneCount(mode.Key);
                 }
             }
         }
@@ -200,15 +200,15 @@ namespace BmsParser
         public string BackBmp { get => backBmp; set => backBmp = value ?? string.Empty; }
 
         public bool ContainsUndefinedLongNote => Timelines
-            .Any(t => Enumerable.Range(0, Mode.key)
+            .Any(t => Enumerable.Range(0, Mode.Key)
                 .Any(i => t.getNote(i) != null && t.getNote(i) is LongNote ln && ln.Type == LNMode.Undefined));
 
         public bool ContainsLongNote => Timelines
-            .Any(tl => Enumerable.Range(0, Mode.key)
+            .Any(tl => Enumerable.Range(0, Mode.Key)
                 .Any(i => tl.getNote(i) is LongNote));
 
         public bool ContainsMineNote => Timelines
-            .Any(tl => Enumerable.Range(0, Mode.key)
+            .Any(tl => Enumerable.Range(0, Mode.Key)
                 .Any(i => tl.getNote(i) is MineNote));
 
         public string Preview { get; set; }
@@ -225,7 +225,7 @@ namespace BmsParser
 
         public EventLane EventLane => new(this);
 
-        public Lane[] Lanes => Enumerable.Range(0, Mode.key).Select(i => new Lane(this, i)).ToArray();
+        public Lane[] Lanes => Enumerable.Range(0, Mode.Key).Select(i => new Lane(this, i)).ToArray();
 
         /// <summary>
         /// 進数指定
@@ -293,7 +293,7 @@ namespace BmsParser
                 }
 
                 tlsb.Append('[');
-                for (var lane = 0; lane < mode.key; lane++)
+                for (var lane = 0; lane < mode.Key; lane++)
                 {
                     var n = tl.getNote(lane);
                     if (n is NormalNote)
@@ -319,7 +319,7 @@ namespace BmsParser
                     {
                         tlsb.Append('0');
                     }
-                    if (lane < mode.key - 1)
+                    if (lane < mode.Key - 1)
                     {
                         tlsb.Append(',');
                     }
@@ -339,20 +339,20 @@ namespace BmsParser
 
         public int GetTotalNotes(NoteType type = NoteType.All, int start = 0, int end = int.MaxValue, PlaySide side = PlaySide.Both)
         {
-            if (Mode.player == 1 && side == PlaySide.P2)
+            if (Mode.Player == 1 && side == PlaySide.P2)
                 return 0;
-            var slane = new int[Mode.scratchKey.Length / (side == PlaySide.Both ? 1 : Mode.player)];
+            var slane = new int[Mode.ScratchKey.Length / (side == PlaySide.Both ? 1 : Mode.Player)];
             var sindex = 0;
             for (var i = side == PlaySide.P2 ? slane.Length : 0; sindex < slane.Length; i++)
             {
-                slane[sindex] = Mode.scratchKey[i];
+                slane[sindex] = Mode.ScratchKey[i];
                 sindex++;
             }
-            var nlane = new int[(Mode.key - Mode.scratchKey.Length) / (side == PlaySide.Both ? 1 : Mode.player)];
+            var nlane = new int[(Mode.Key - Mode.ScratchKey.Length) / (side == PlaySide.Both ? 1 : Mode.Player)];
             var nindex = 0;
             for (var i = 0; nindex < nlane.Length; i++)
             {
-                if (!Mode.isScratchKey(i))
+                if (!Mode.IsScratchKey(i))
                 {
                     nlane[nindex] = i;
                     nindex++;

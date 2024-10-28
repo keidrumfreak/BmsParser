@@ -198,7 +198,7 @@ namespace BmsParser
                 // 5/10KEY  => 7/14KEY
                 if (ch2 == 7 || ch2 == 8)
                 {
-                    Mode mode = (model.Mode == Mode.BEAT_5K) ? Mode.BEAT_7K : (model.Mode == Mode.BEAT_10K ? Mode.BEAT_14K : null);
+                    Mode mode = (model.Mode == Mode.Beat5K) ? Mode.Beat7K : (model.Mode == Mode.Beat10K ? Mode.Beat14K : null);
                     if (mode != null)
                     {
                         this.processData(line, (Action<double, int>)((pos, data) =>
@@ -210,7 +210,7 @@ namespace BmsParser
                 // 5/7KEY  => 10/14KEY			
                 if (basech == P2_KEY_BASE || basech == P2_INVISIBLE_KEY_BASE || basech == P2_LONG_KEY_BASE || basech == P2_MINE_KEY_BASE)
                 {
-                    Mode mode = (model.Mode == Mode.BEAT_5K) ? Mode.BEAT_10K : (model.Mode == Mode.BEAT_7K ? Mode.BEAT_14K : null);
+                    Mode mode = (model.Mode == Mode.Beat5K) ? Mode.Beat10K : (model.Mode == Mode.Beat7K ? Mode.Beat14K : null);
                     if (mode != null)
                     {
                         this.processData(line, (Action<double, int>)((pos, data) =>
@@ -294,8 +294,8 @@ namespace BmsParser
             int lnobj = model.LNObj;
             var lnmode = model.LNMode;
             this.tlcache = tlcache;
-            int[] cassign = model.Mode == Mode.POPN_9K ? CHANNELASSIGN_POPN :
-               (model.Mode == Mode.BEAT_7K || model.Mode == Mode.BEAT_14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
+            int[] cassign = model.Mode == Mode.Popn9K ? CHANNELASSIGN_POPN :
+               (model.Mode == Mode.Beat7K || model.Mode == Mode.Beat14K ? CHANNELASSIGN_BEAT7 : CHANNELASSIGN_BEAT5);
             int @base = model.Base;
             // 小節線追加
             TimeLine basetl = getTimeLine(sectionnum);
@@ -657,7 +657,7 @@ namespace BmsParser
             double bpm = le.Value.timeline.getBPM();
             double time = le.Value.time + le.Value.timeline.getMicroStop() + (240000.0 * 1000 * (section - le.Key)) / bpm;
 
-            TimeLine tl = new TimeLine(section, (long)time, model.Mode.key);
+            TimeLine tl = new TimeLine(section, (long)time, model.Mode.Key);
             tl.setBPM(bpm);
             tl.setScroll(scroll);
             tlcache.put(section, new TimeLineCache(time, tl));

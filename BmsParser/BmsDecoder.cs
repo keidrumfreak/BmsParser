@@ -131,7 +131,7 @@ namespace BmsParser
             {
                 using var mem = new MemoryStream(data);
                 using var br = new StreamReader(mem);
-                model.Mode = ispms ? Mode.POPN_9K : Mode.BEAT_5K;
+                model.Mode = ispms ? Mode.Popn9K : Mode.Beat5K;
                 // Logger.getGlobal().info(
                 // "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
 
@@ -464,9 +464,9 @@ namespace BmsParser
                 }
 
                 SortedDictionary<Double, TimeLineCache> timelines = new SortedDictionary<Double, TimeLineCache>();
-                List<LongNote>[] lnlist = new List<LongNote>[model.Mode.key];
-                LongNote[] lnendstatus = new LongNote[model.Mode.key];
-                TimeLine basetl = new TimeLine(0, 0, model.Mode.key);
+                List<LongNote>[] lnlist = new List<LongNote>[model.Mode.Key];
+                LongNote[] lnendstatus = new LongNote[model.Mode.Key];
+                TimeLine basetl = new TimeLine(0, 0, model.Mode.Key);
                 basetl.setBPM(model.Bpm);
                 timelines.put(0.0, new TimeLineCache(0.0, basetl));
                 foreach (Section section in sections)
@@ -518,11 +518,11 @@ namespace BmsParser
                         log.Add(new DecodeLog(WARNING, "最後のノート定義から30秒以上の余白があります"));
                     }
                 }
-                if (model.Player > 1 && (model.Mode == Mode.BEAT_5K || model.Mode == Mode.BEAT_7K))
+                if (model.Player > 1 && (model.Mode == Mode.Beat5K || model.Mode == Mode.Beat7K))
                 {
                     log.Add(new DecodeLog(WARNING, "#PLAYER定義が2以上にもかかわらず2P側のノーツ定義が一切ありません"));
                 }
-                if (model.Player == 1 && (model.Mode == Mode.BEAT_10K || model.Mode == Mode.BEAT_14K))
+                if (model.Player == 1 && (model.Mode == Mode.Beat10K || model.Mode == Mode.Beat14K))
                 {
                     log.Add(new DecodeLog(WARNING, "#PLAYER定義が1にもかかわらず2P側のノーツ定義が存在します"));
                 }
