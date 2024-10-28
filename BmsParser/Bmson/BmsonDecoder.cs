@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Buffers.Text;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using BmsParser;
-using static System.Collections.Specialized.BitVector32;
 using static BmsParser.DecodeLog.State;
 using static BmsParser.Layer;
-using static BmsParser.Mode;
 
 namespace BmsParser
 {
@@ -65,7 +60,7 @@ namespace BmsParser
             tlcache.Clear();
             long currnttime = DateTime.Now.Ticks;
             // BMS読み込み、ハッシュ値取得
-            model = new BmsModel();
+            model = new BmsModel(Mode.Beat7K);
             Bmson bmson = null;
             try
             {
@@ -76,6 +71,7 @@ namespace BmsParser
                 //bmson = mapper.readValue(new DigestInputStream(new BufferedInputStream(Files.newInputStream(f)), digest),
                 //        Bmson.class);
                 bmson = JsonSerializer.Deserialize<Bmson>(input);
+
                 var sha256 = SHA256.Create();
                 var arr = sha256.ComputeHash(bin);
                 model.Sha256 = BitConverter.ToString(arr).ToLower().Replace("-", "");
@@ -144,11 +140,11 @@ namespace BmsParser
                 model.LNMode = (LNMode)bmson.Info.LNType;
             }
             int[] keyassign;
-            if (model.Mode == Beat5K)
+            if (model.Mode == Mode.Beat5K)
             {
                 keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5 };
             }
-            else if (model.Mode == Beat10K)
+            else if (model.Mode == Mode.Beat10K)
             {
                 keyassign = new int[] { 0, 1, 2, 3, 4, -1, -1, 5, 6, 7, 8, 9, 10, -1, -1, 11 };
             }

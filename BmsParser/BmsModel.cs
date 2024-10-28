@@ -30,7 +30,7 @@ namespace BmsParser
 
     public enum TotalType { Bms, Bmson }
 
-    public class BmsModel
+    public class BmsModel(Mode mode)
     {
         /// <summary>
         /// プレイヤー数
@@ -55,7 +55,7 @@ namespace BmsParser
         /// </summary>
         public string Genre { get => genre; set => genre = value ?? string.Empty; }
 
-        string artist;
+        string artist = string.Empty;
         /// <summary>
         /// アーティスト
         /// </summary>
@@ -148,14 +148,13 @@ namespace BmsParser
         /// <summary>
         /// MD5値
         /// </summary>
-        public string MD5 { get; set; }
+        public string MD5 { get; set; } = string.Empty;
 
         /// <summary>
         /// Sha256値
         /// </summary>
-        public string Sha256 { get; set; }
+        public string Sha256 { get; set; } = string.Empty;
 
-        Mode mode;
         /// <summary>
         /// 使用するキー数
         /// </summary>
@@ -182,11 +181,11 @@ namespace BmsParser
         /// </summary>
         public string[] BgaList { get; set; } = [];
 
-        public ChartInformation ChartInformation { get; set; }
+        public ChartInformation? ChartInformation { get; set; }
 
-        public int[] Random => ChartInformation?.SelectedRandoms;
+        public int[] Random => ChartInformation?.SelectedRandoms ?? [];
 
-        public string Path => ChartInformation?.Path;
+        public string Path => ChartInformation?.Path ?? string.Empty;
 
         public LNType LNType => ChartInformation?.LNType ?? LNType.LongNote;
 
@@ -211,7 +210,7 @@ namespace BmsParser
             .Any(tl => Enumerable.Range(0, Mode.Key)
                 .Any(i => tl.getNote(i) is MineNote));
 
-        public string Preview { get; set; }
+        public string Preview { get; set; } = string.Empty;
 
         public LNMode LNMode { get; set; } = LNMode.Undefined;
 

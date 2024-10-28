@@ -105,7 +105,7 @@ namespace BmsParser
         {
             log.Clear();
             long time = DateTime.Now.Ticks;
-            BmsModel model = new BmsModel();
+            BmsModel model = new BmsModel(ispms ? Mode.Popn9K : Mode.Beat5K);
             scrolltable.Clear();
             stoptable.Clear();
             bpmtable.Clear();
@@ -131,7 +131,7 @@ namespace BmsParser
             {
                 using var mem = new MemoryStream(data);
                 using var br = new StreamReader(mem);
-                model.Mode = ispms ? Mode.Popn9K : Mode.Beat5K;
+                //model.Mode = ispms ? Mode.Popn9K : Mode.Beat5K;
                 // Logger.getGlobal().info(
                 // "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
 

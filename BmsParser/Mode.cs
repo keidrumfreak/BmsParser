@@ -23,6 +23,6 @@ namespace BmsParser
 
         static readonly Mode[] modes = [Beat5K, Beat7K, Beat10K, Beat14K, Popn5K, Popn9K, Keyboard24K, Keyboard24KDouble];
 
-        public static Mode GetMode(string hint) => modes.FirstOrDefault(m => m.Hint == hint);
+        public static Mode? GetMode(string hint) => modes.FirstOrDefault(m => m.Hint == hint);
     }
 }

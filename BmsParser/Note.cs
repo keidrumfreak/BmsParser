@@ -55,7 +55,7 @@ namespace BmsParser
         /// </summary>
         public long MicroTime { get; set; }
 
-        private List<Note> layeredNotes;
+        private List<Note>? layeredNotes;
         /// <summary>
         /// 同時演奏されるノート
         /// </summary>
