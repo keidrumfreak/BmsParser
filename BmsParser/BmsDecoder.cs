@@ -114,7 +114,7 @@ namespace BmsParser
                         if (selectedRandom == null)
                         {
                             crandoms.AddLast((int)(new Random().NextDouble() * r) + 1);
-                            srandoms.AddLast(crandoms.Last!);
+                            srandoms.AddLast(crandoms.Last!.Value);
                         }
                         else
                         {
