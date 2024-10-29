@@ -62,20 +62,20 @@ namespace BmsParser
             Array.Fill(BgaMap, -2);
         }
 
-        public bool Process(BmsModel model, string line, List<DecodeLog> logs)
+        public void Process(BmsModel model, string line, List<DecodeLog> logs)
         {
             if (line.Length <= 1)
-                return true;
+                return;
 
             var c = line[1];
             var @base = model.Base;
-            if ('0' <= c && c <= '9' && line.Length > 6)
+            if (line[0] == '#' && '0' <= c && c <= '9' && line.Length > 6)
             {
                 // 楽譜
                 if (!int.TryParse(line[1..4], out var barNum))
                 {
                     logs.Add(new DecodeLog(State.Warning, "小節に数字が定義されていません : " + line));
-                    return true;
+                    return;
                 }
                 lock (BarTable)
                 {
@@ -86,24 +86,32 @@ namespace BmsParser
                     }
                     bar.Add(line);
                 }
-                return true;
+                return;
             }
 
             var seq = sequences.FirstOrDefault(s => s.IsMatch(line));
             if (seq != default)
             {
                 seq.Process(line, model, logs, this);
-                return true;
+                return;
             }
 
             var command = commands.FirstOrDefault(c => c.IsMatch(line));
             if (command != default)
             {
                 command.Process(line, model, logs);
-                return true;
+                return;
             }
 
-            return false;
+            if (line[0] == '%' || line[0] == '@')
+            {
+                var index = line.IndexOf(' ');
+                if (index == -1 || line.Length <= index + 1)
+                    return;
+                model.Values.Put(line[1..index], line[(index + 1)..]);
+            }
+
+            return;
         }
 
         abstract record Keyword(string Name)

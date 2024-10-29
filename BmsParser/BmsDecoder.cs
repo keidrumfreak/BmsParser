@@ -103,7 +103,7 @@ namespace BmsParser
                 if (line[0] == '#')
                 {
                     // RANDOM制御系
-                    if (matchesReserveWord(line, "RANDOM"))
+                    if (line.StartsWith("#RANDOM", StringComparison.OrdinalIgnoreCase))
                     {
                         if (!int.TryParse(line[8..].Trim(), out var r))
                         {
@@ -121,7 +121,7 @@ namespace BmsParser
                             crandoms.AddLast(selectedRandom[randoms.Count - 1]);
                         }
                     }
-                    else if (matchesReserveWord(line, "IF"))
+                    else if (line.StartsWith("#IF", StringComparison.OrdinalIgnoreCase))
                     {
                         // RANDOM分岐開始
                         if (crandoms.Count == 0)
@@ -138,7 +138,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, "#IFに数字が定義されていません"));
                         }
                     }
-                    else if (matchesReserveWord(line, "ENDIF"))
+                    else if (line.StartsWith("#ENDIF", StringComparison.OrdinalIgnoreCase))
                     {
                         if (skip.Count != 0)
                         {
@@ -149,7 +149,7 @@ namespace BmsParser
                             logs.Add(new DecodeLog(State.Warning, "ENDIFに対応するIFが存在しません: " + line));
                         }
                     }
-                    else if (matchesReserveWord(line, "ENDRANDOM"))
+                    else if (line.StartsWith("#ENDRANDOM", StringComparison.OrdinalIgnoreCase))
                     {
                         if (crandoms.Count != 0)
                         {
@@ -164,29 +164,8 @@ namespace BmsParser
                     {
                         continue;
                     }
-                    var c = line[1];
-                    var @base = model.Base;
-                    if (processor.Process(model, line, logs))
-                    {
-                        continue;
-                    }
                 }
-                else if (line[0] == '%')
-                {
-                    var index = line.IndexOf(' ');
-                    if (index > 0 && line.Length > index + 1)
-                    {
-                        model.Values.Put(line.Substring(1, index), line[(index + 1)..]);
-                    }
-                }
-                else if (line[0] == '@')
-                {
-                    var index = line.IndexOf(' ');
-                    if (index > 0 && line.Length > index + 1)
-                    {
-                        model.Values.Put(line.Substring(1, index), line[(index + 1)..]);
-                    }
-                }
+                processor.Process(model, line, logs);
             }
 
             model.WavList = [.. processor.WavList];
@@ -284,257 +263,6 @@ namespace BmsParser
 
             model.ChartInformation = new ChartInformation(path, LNType, selectedRandom);
             return model;
-        }
-
-        private static bool matchesReserveWord(string line, string s)
-        {
-            var len = s.Length;
-            if (line.Length <= len)
-            {
-                return false;
-            }
-            for (var i = 0; i < len; i++)
-            {
-                var c = line[i + 1];
-                var c2 = s[i];
-                if (c != c2 && c != c2 + 32)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
-    /**
-     * 予約語
-     *
-     * @author exch
-     */
-    class CommandWord
-    {
-
-        public static readonly CommandWord PLAYER = new(nameof(PLAYER), (model, arg) =>
-        {
-            if (int.TryParse(arg, out var player))
-            {
-                // TODO playerの許容幅は？
-                if (player >= 1 && player < 3)
-                {
-
-                    model.Player = player;
-                }
-                else
-                {
-                    return new DecodeLog(State.Warning, "#PLAYERに規定外の数字が定義されています : " + player);
-                }
-            }
-            else
-            {
-                return new DecodeLog(State.Warning, "#PLAYERに数字が定義されていません");
-            }
-            return null;
-        });
-        public static readonly CommandWord GENRE = new(nameof(GENRE), (model, arg) =>
-        {
-            model.Genre = arg;
-            return null;
-        });
-        public static readonly CommandWord TITLE = new(nameof(TITLE), (model, arg) =>
-        {
-            model.Title = arg;
-            return null;
-        });
-        public static readonly CommandWord SUBTITLE = new(nameof(SUBTITLE), (model, arg) =>
-        {
-            model.Subtitle = arg;
-            return null;
-        });
-        public static readonly CommandWord ARTIST = new(nameof(ARTIST), (model, arg) =>
-        {
-            model.Artist = arg;
-            return null;
-        });
-        public static readonly CommandWord SUBARTIST = new(nameof(SUBARTIST), (model, arg) =>
-        {
-            model.Subartist = arg;
-            return null;
-        });
-        public static readonly CommandWord PLAYLEVEL = new(nameof(PLAYLEVEL), (model, arg) =>
-        {
-            model.PlayLevel = arg;
-            return null;
-        });
-        public static readonly CommandWord RANK = new(nameof(RANK), (model, arg) =>
-        {
-            if (int.TryParse(arg, out var rank))
-            {
-                if (rank >= 0 && rank < 5)
-                {
-                    model.JudgeRank = rank;
-                    model.JudgeRankType = JudgeRankType.BmsRank;
-                }
-                else
-                {
-                    return new DecodeLog(State.Warning, "#RANKに規定外の数字が定義されています : " + rank);
-                }
-            }
-            else
-            {
-                return new DecodeLog(State.Warning, "#RANKに数字が定義されていません");
-            }
-            return null;
-        });
-        public static readonly CommandWord DEFEXRANK = new(nameof(DEFEXRANK), (model, arg) =>
-        {
-            if (int.TryParse(arg, out var rank))
-            {
-                if (rank >= 1)
-                {
-                    model.JudgeRank = rank;
-                    model.JudgeRankType = JudgeRankType.BmsDefEXRank;
-                }
-                else
-                {
-                    return new DecodeLog(State.Warning, "#DEFEXRANK 1以下はサポートしていません" + rank);
-                }
-            }
-            else
-            {
-                return new DecodeLog(State.Warning, "#DEFEXRANKに数字が定義されていません");
-            }
-            return null;
-        });
-        public static readonly CommandWord TOTAL = new(nameof(TOTAL), (model, arg) =>
-        {
-            if (double.TryParse(arg, out var total))
-            {
-                if (total > 0)
-                {
-                    model.Total = total;
-                    model.TotalType = TotalType.Bms;
-                }
-                else
-                {
-                    return new DecodeLog(State.Warning, "#TOTALが0以下です");
-                }
-            }
-            else
-            {
-                return new DecodeLog(State.Warning, "#TOTALに数字が定義されていません");
-            }
-            return null;
-        });
-        public static readonly CommandWord VOLWAV = new(nameof(VOLWAV), (model, arg) =>
-        {
-            if (int.TryParse(arg, out var x))
-            {
-                model.VolWav = x;
-            }
-            else
-            {
-                return new DecodeLog(State.Warning, "#VOLWAVに数字が定義されていません");
-            }
-            return null;
-        });
-        public static readonly CommandWord STAGEFILE = new(nameof(STAGEFILE), (model, arg) =>
-        {
-            model.StageFile = arg.Replace('\\', '/');
-            return null;
-        });
-        public static readonly CommandWord BACKBMP = new(nameof(BACKBMP), (model, arg) =>
-        {
-            model.BackBmp = arg.Replace('\\', '/');
-            return null;
-        });
-        public static readonly CommandWord PREVIEW = new(nameof(PREVIEW), (model, arg) =>
-        {
-            model.Preview = arg.Replace('\\', '/');
-            return null;
-        });
-        public static readonly CommandWord LNOBJ = new(nameof(LNOBJ), (model, arg) =>
-        {
-            try
-            {
-                if (model.Base == 62)
-                {
-                    model.LNObj = ChartDecoder.ParseInt62(arg, 0);
-                }
-                else
-                {
-                    model.LNObj = ChartDecoder.ParseInt36(arg, 0);
-                }
-            }
-            catch (FormatException)
-            {
-                return new DecodeLog(State.Warning, "#LNOBJに数字が定義されていません");
-            }
-            return null;
-        });
-        public static readonly CommandWord LNMODE = new(nameof(LNMODE), (model, arg) =>
-        {
-            if (int.TryParse(arg, out var lnmode))
-            {
-                if (lnmode < 0 || lnmode > 3)
-                {
-                    return new DecodeLog(State.Warning, "#LNMODEに無効な数字が定義されています");
-                }
-                model.LNMode = (LNMode)lnmode;
-            }
-            else
-            {
-                return new DecodeLog(State.Warning, "#LNMODEに数字が定義されていません");
-            }
-            return null;
-        });
-        public static readonly CommandWord DIFFICULTY = new(nameof(DIFFICULTY), (model, arg) =>
-        {
-            if (int.TryParse(arg, out var x))
-            {
-                model.Difficulty = (Difficulty)x;
-            }
-            else
-            {
-                return new DecodeLog(State.Warning, "#DIFFICULTYに数字が定義されていません");
-            }
-            return null;
-        });
-        public static readonly CommandWord BANNER = new(nameof(BANNER), (model, arg) =>
-        {
-            model.Banner = arg.Replace('\\', '/');
-            return null;
-        });
-        public static readonly CommandWord COMMENT = new(nameof(COMMENT), (model, arg) =>
-        {
-            // TODO 未実装
-            return null;
-        });
-        public static readonly CommandWord BASE = new(nameof(BASE), (model, arg) =>
-        {
-            if (int.TryParse(arg, out var @base))
-            {
-                if (@base != 62)
-                {
-                    return new DecodeLog(State.Warning, "#BASEに無効な数字が定義されています");
-                }
-                model.Base = @base;
-            }
-            else
-            {
-                return new DecodeLog(State.Warning, "#BASEに数字が定義されていません");
-            }
-            return null;
-        });
-
-        public static readonly CommandWord[] values = [PLAYER, GENRE, TITLE, SUBTITLE, ARTIST, SUBARTIST, PLAYLEVEL, RANK, DEFEXRANK, TOTAL, VOLWAV, STAGEFILE, BACKBMP, PREVIEW, LNOBJ, LNMODE, DIFFICULTY, BANNER, COMMENT, BASE];
-
-        public Func<BmsModel, string, DecodeLog?> function;
-        public string name;
-
-        private CommandWord(string name, Func<BmsModel, string, DecodeLog?> function)
-        {
-            this.name = name;
-            this.function = function;
         }
     }
 }

@@ -119,33 +119,33 @@ namespace BmsParser.Tests
             Assert.IsFalse(logs.Count != 0);
         }
 
-        //        [DataTestMethod]
-        //        [DataRow("@TEST1 VALUE1", "TEST1", "VALUE1")]
-        //        [DataRow("%TEST2 VALUE2", "TEST2", "VALUE2")]
-        //        public void LoadMap(string line, string key, string value)
-        //        {
-        //            var model = new BmsModel();
-        //            var logs = new List<DecodeLog>();
+        [DataTestMethod]
+        [DataRow("@TEST1 VALUE1", "TEST1", "VALUE1")]
+        [DataRow("%TEST2 VALUE2", "TEST2", "VALUE2")]
+        public void LoadMap(string line, string key, string value)
+        {
+            var model = new BmsModel(Mode.Beat7K);
+            var logs = new List<DecodeLog>();
 
-        //            var processor = new LineProcessor();
-        //            processor.Process(model, line, logs);
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
 
-        //            Assert.AreEqual(value, model.Values[key]);
-        //        }
+            Assert.AreEqual(value, model.Values[key]);
+        }
 
-        //        [DataTestMethod]
-        //        [DataRow("@TEST1VALUE1")]
-        //        [DataRow("%TEST2VALUE2 ")]
-        //        public void LoadMapFailed(string line)
-        //        {
-        //            var model = new BmsModel();
-        //            var logs = new List<DecodeLog>();
+        [DataTestMethod]
+        [DataRow("@TEST1VALUE1")]
+        [DataRow("%TEST2VALUE2 ")]
+        public void LoadMapFailed(string line)
+        {
+            var model = new BmsModel(Mode.Beat7K);
+            var logs = new List<DecodeLog>();
 
-        //            var processor = new LineProcessor();
-        //            processor.Process(model, line, logs);
+            var processor = new LineProcessor();
+            processor.Process(model, line, logs);
 
-        //            Assert.IsFalse(model.Values.Any());
-        //        }
+            Assert.IsFalse(model.Values.Any());
+        }
 
         [DataTestMethod]
         [DataRow("#BPM01 12.5", 1, 12.5)]
