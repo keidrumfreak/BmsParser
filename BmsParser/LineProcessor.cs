@@ -10,9 +10,9 @@ namespace BmsParser
 {
     class LineProcessor
     {
-        //        static CommandWord[] command =
-        //        {
-        //            new CommandWord("#PLAYER", ValueType.Number, nameof(BmsModel.Player)),
+        static CommandWord[] command =
+            [
+            new CommandWord("#PLAYER", ValueType.Number, nameof(BmsModel.Player)),
         //            new CommandWord("#GENRE", ValueType.Text, nameof(BmsModel.Genre)),
         //            new CommandWord("#TITLE", ValueType.Text, nameof(BmsModel.Title)),
         //            new CommandWord("#SUBTITLE", ValueType.Text, nameof(BmsModel.Subtitle)),
@@ -35,21 +35,16 @@ namespace BmsParser
         //            new CommandWord("#DIFFICULTY", ValueType.Number, nameof(BmsModel.Difficulty)),
         //            new CommandWord("#BANNER", ValueType.Path, nameof(BmsModel.Banner)),
         //            new CommandWord("#BPM", ValueType.Other, nameof(BmsModel.Bpm))
-        //        }
+                ];
 
-        readonly SequenceWord bpm = new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 };
-        readonly SequenceWord wav = new("#WAV", ValueType.Path);
-        readonly SequenceWord bmp = new("#BMP", ValueType.Path);
-        readonly SequenceWord stop = new("#STOP", ValueType.Number) { NumberRange = stop => stop >= 0 };
-        readonly SequenceWord scroll = new("#SCROLL", ValueType.Number);
-        //static SequenceWord[] sequences =
-        //[
-        //new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 },
-        //            new SequenceWord("#WAV", ValueType.Path),
-        //            new SequenceWord("#BMP", ValueType.Path),
-        //            new SequenceWord("#STOP", ValueType.Number) { NumberRange = stop => stop >= 0 },
-        //            new SequenceWord("#SCROLL", ValueType.Number)
-        //];
+        static readonly SequenceWord[] sequences =
+            [
+            new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 },
+            new("#WAV", ValueType.Path),
+            new("#BMP", ValueType.Path),
+            new("#STOP", ValueType.Number) { NumberRange = stop => stop >= 0 },
+            new("#SCROLL", ValueType.Number)
+            ];
 
         public ConcurrentDictionary<int, double> BpmTable { get; } = new();
 
@@ -98,93 +93,12 @@ namespace BmsParser
                 return true;
             }
 
-            if (bpm.IsMatch(line))
+            var seq = sequences.FirstOrDefault(s => s.IsMatch(line));
+            if (seq != default)
             {
-                if (line[4] == ' ')
-                {
-                    if (!double.TryParse(line[5..].Trim(), out var bpm))
-                    {
-                        logs.Add(new DecodeLog(State.Warning, "#BPMに数字が定義されていません : " + line));
-                        return true;
-                    }
-                    if (bpm > 0)
-                    {
-                        model.Bpm = bpm;
-                    }
-                    else
-                    {
-                        logs.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
-                    }
-                    return true;
-                }
-                else
-                {
-                    if (!double.TryParse(line[7..].Trim(), out var bpm))
-                    {
-                        logs.Add(new DecodeLog(State.Warning, "#BPMxxに数字が定義されていません : " + line));
-                        return true;
-                    }
-                    if (bpm <= 0)
-                    {
-                        logs.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
-                        return true;
-                    }
-                    if (model.Base == 62 ? Utility.TryParseInt62(line[4..6], out var seq) : Utility.TryParseInt36(line[4..6], out seq))
-                    {
-                        BpmTable.Put(seq, bpm);
-                    }
-                    else
-                    {
-                        logs.Add(new DecodeLog(State.Warning, "#BPMxxに数字が定義されていません : " + line));
-                    }
-                    return true;
-                }
-            }
-            if (wav.IsMatch(line))
-            {
-                wav.Process(line, model, logs, this);
+                seq.Process(line, model, logs, this);
                 return true;
             }
-            if (bmp.IsMatch(line))
-            {
-                bmp.Process(line, model, logs, this);
-                return true;
-            }
-            if (stop.IsMatch(line))
-            {
-                stop.Process(line, model, logs, this);
-                return true;
-            }
-            if (scroll.IsMatch(line))
-            {
-                scroll.Process(line, model, logs, this);
-                return true;
-            }
-
-            //            var top = line.Split(' ')[0].Trim().ToUpper();
-            //            var seq = sequences.FirstOrDefault(s => top.StartsWith(s.Name));
-            //            if (seq != default && top != seq.Name)
-            //            {
-            //                seq.Process(top, line, model, logs, this);
-            //                return;
-            //            }
-
-            //            var word = command.FirstOrDefault(w => w.Name == top);
-            //            if (word != default)
-            //            {
-            //                word.Process(line, model, logs);
-            //                return;
-            //            }
-
-            //            if (line[0] == '%' || line[0] == '@')
-            //            {
-            //                if (top.Length == line.Trim().Length)
-            //                    return;
-            //                if (model.Values.ContainsKey(top[1..]))
-            //                    return;
-            //                model.Values.Put(top[1..], line[(top.Length + 1)..]);
-            //                return;
-            //            }
             return false;
         }
 
@@ -203,6 +117,24 @@ namespace BmsParser
 
             public void Process(string line, BmsModel model, List<DecodeLog> logs, LineProcessor processor)
             {
+                if (Name == "#BPM" && line[4] == ' ')
+                {
+                    if (!double.TryParse(line[5..].Trim(), out var bpm))
+                    {
+                        logs.Add(new DecodeLog(State.Warning, $"#BPMに数字が定義されていません : {line}"));
+                        return;
+                    }
+                    if (bpm > 0)
+                    {
+                        model.Bpm = bpm;
+                    }
+                    else
+                    {
+                        logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
+                    }
+                    return;
+                }
+
                 if (line.Length < Name.Length + 4 || model.Base == 62 ? !Utility.TryParseInt62(line[Name.Length..(Name.Length + 2)], out var seq) : !Utility.TryParseInt36(line[Name.Length..(Name.Length + 2)], out seq))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{Name}xxは不十分な定義です : {line}"));
@@ -248,59 +180,59 @@ namespace BmsParser
             }
         }
 
-        //        record CommandWord(string Name, ValueType ValueType, string PropertyName)
-        //        {
-        //            public Func<int, bool> NumberRange { get; init; }
+        record CommandWord(string Name, ValueType ValueType, string PropertyName)
+        {
+            public Func<int, bool>? NumberRange { get; init; }
 
-        //            public Action<BmsModel> AppendProcess { get; init; }
+            public Action<BmsModel>? AppendProcess { get; init; }
 
-        //            public void Process(string line, BmsModel model, List<DecodeLog> logs)
-        //            {
-        //                var arg = line[Name.Length..].Trim();
-        //                var prop = typeof(BmsModel).GetProperty(PropertyName);
-        //                switch (ValueType)
-        //                {
-        //                    case ValueType.Number:
-        //                        if (!int.TryParse(arg, out var value))
-        //                        {
-        //                            logs.Add(new DecodeLog(State.Warning, $"{Name}に数字が定義されていません : {line}"));
-        //                            return;
-        //                        }
-        //                        if (!NumberRange?.Invoke(value) ?? false)
-        //                        {
-        //                            logs.Add(new DecodeLog(State.Warning, $"{Name}に無効な数字が定義されています : {line}"));
-        //                            return;
-        //                        }
-        //                        prop.SetValue(model, value);
-        //                        break;
-        //                    case ValueType.Text:
-        //                        prop.SetValue(model, arg);
-        //                        break;
-        //                    case ValueType.Path:
-        //                        prop.SetValue(model, arg.Replace('\\', '/'));
-        //                        break;
-        //                    case ValueType.Other:
-        //                        if (Name == "#BPM")
-        //                        {
-        //                            if (!double.TryParse(arg, out var bpm))
-        //                            {
-        //                                logs.Add(new DecodeLog(State.Warning, $"{Name}に数字が定義されていません : {line}"));
-        //                                return;
-        //                            }
-        //                            if (bpm <= 0)
-        //                            {
-        //                                logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
-        //                                return;
-        //                            }
-        //                            prop.SetValue(model, bpm);
-        //                        }
-        //                        break;
-        //                    default:
-        //                        break;
-        //                }
-        //                AppendProcess?.Invoke(model);
-        //            }
-        //        }
+            public void Process(string line, BmsModel model, List<DecodeLog> logs)
+            {
+                var arg = line[Name.Length..].Trim();
+                var prop = typeof(BmsModel).GetProperty(PropertyName);
+                switch (ValueType)
+                {
+                    case ValueType.Number:
+                        if (!int.TryParse(arg, out var value))
+                        {
+                            logs.Add(new DecodeLog(State.Warning, $"{Name}に数字が定義されていません : {line}"));
+                            return;
+                        }
+                        if (!NumberRange?.Invoke(value) ?? false)
+                        {
+                            logs.Add(new DecodeLog(State.Warning, $"{Name}に規定外の数字が定義されています : {line}"));
+                            return;
+                        }
+                        prop.SetValue(model, value);
+                        break;
+                    case ValueType.Text:
+                        prop.SetValue(model, arg);
+                        break;
+                    case ValueType.Path:
+                        prop.SetValue(model, arg.Replace('\\', '/'));
+                        break;
+                    case ValueType.Other:
+                        if (Name == "#BPM")
+                        {
+                            if (!double.TryParse(arg, out var bpm))
+                            {
+                                logs.Add(new DecodeLog(State.Warning, $"{Name}に数字が定義されていません : {line}"));
+                                return;
+                            }
+                            if (bpm <= 0)
+                            {
+                                logs.Add(new DecodeLog(State.Warning, $"#negative BPMはサポートされていません : {line}"));
+                                return;
+                            }
+                            prop.SetValue(model, bpm);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                AppendProcess?.Invoke(model);
+            }
+        }
 
         enum ValueType { Text, Number, Path, Sequence, Other }
     }
