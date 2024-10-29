@@ -14,16 +14,6 @@ namespace BmsParser
 {
     class Section
     {
-        public const int ILLEGAL = -1;
-        public const int LANE_AUTOPLAY = 1;
-        public const int SECTION_RATE = 2;
-        public const int BPM_CHANGE = 3;
-        public const int BGA_PLAY = 4;
-        public const int POOR_PLAY = 6;
-        public const int LAYER_PLAY = 7;
-        public const int BPM_CHANGE_EXTEND = 8;
-        public const int STOP = 9;
-
         public const int P1_KEY_BASE = 1 * 36 + 1;
         public const int P2_KEY_BASE = 2 * 36 + 1;
         public const int P1_INVISIBLE_KEY_BASE = 3 * 36 + 1;
@@ -35,8 +25,7 @@ namespace BmsParser
 
         public const int SCROLL = 1020;
 
-        public static readonly int[] NOTE_CHANNELS = [P1_KEY_BASE, P2_KEY_BASE ,P1_INVISIBLE_KEY_BASE, P2_INVISIBLE_KEY_BASE,
-            P1_LONG_KEY_BASE, P2_LONG_KEY_BASE, P1_MINE_KEY_BASE, P2_MINE_KEY_BASE];
+        readonly Channel[] noteChannels = [Channel.P1KeyBase, Channel.P2KeyBase, Channel.P1InvisibleKeyBase, Channel.P2InvisibleKeyBase, Channel.P1LongKeyBase, Channel.P2LongKeyBase, Channel.P1MineKeyBase, Channel.P2MineKeyBase];
 
         /**
          * 小節の拡大倍率
@@ -74,30 +63,25 @@ namespace BmsParser
             foreach (var line in lines)
             {
                 var channel = ParseInt36(line[4], line[5]);
-                switch (channel)
+                switch ((Channel)channel)
                 {
-                    case ILLEGAL:
+                    case Channel.Illegal:
                         log.Add(new DecodeLog(State.Warning, "チャンネル定義が無効です : " + line));
                         break;
-                    // BGレーン
-                    case LANE_AUTOPLAY:
-                    // BGAレーン
-                    case BGA_PLAY:
-                    // レイヤー
-                    case LAYER_PLAY:
+                    case Channel.LaneAutoPlay:  // BGレーン
+                    case Channel.BgaPlay:       // BGAレーン
+                    case Channel.LayerPlay:     // レイヤー
                         channellines.Add(line);
                         break;
-                    // 小節の拡大率
-                    case SECTION_RATE:
+                    case Channel.SectionRate:   // 小節の拡大率
                         var colon_index = line.IndexOf(':');
                         if (!double.TryParse(line[(colon_index + 1)..], out rate))
                         {
                             log.Add(new DecodeLog(State.Warning, "小節の拡大率が不正です : " + line));
                         }
                         break;
-                    // BPM変化
-                    case BPM_CHANGE:
-                        this.processData(line, (pos, data) =>
+                    case Channel.BpmChange:     // BPM変化
+                        processData(line, (pos, data) =>
                         {
                             if (@base == 62)
                             {
@@ -106,9 +90,8 @@ namespace BmsParser
                             bpmchange.Put(pos, (double)(data / 36) * 16 + (data % 36));
                         });
                         break;
-                    // POORアニメーション
-                    case POOR_PLAY:
-                        poor = this.splitData(line);
+                    case Channel.PoorPlay:      // POORアニメーション
+                        poor = splitData(line);
                         // アニメーションが単一画像のみの定義の場合、0を除外する(ミスレイヤーチャンネルの定義が曖昧)
                         var singleid = 0;
                         foreach (var id in poor)
@@ -131,9 +114,8 @@ namespace BmsParser
                             poor = [singleid];
                         }
                         break;
-                    // BPM変化(拡張)
-                    case BPM_CHANGE_EXTEND:
-                        this.processData(line, (pos, data) =>
+                    case Channel.BpmChangeExtend:   // BPM変化(拡張)
+                        processData(line, (pos, data) =>
                         {
                             if (bpmtable.TryGetValue(data, out var bpm))
                             {
@@ -145,9 +127,8 @@ namespace BmsParser
                             }
                         });
                         break;
-                    // ストップシーケンス
-                    case STOP:
-                        this.processData(line, (pos, data) =>
+                    case Channel.Stop:          // ストップシーケンス
+                        processData(line, (pos, data) =>
                         {
                             if (stoptable.TryGetValue(data, out var st))
                             {
@@ -159,9 +140,8 @@ namespace BmsParser
                             }
                         });
                         break;
-                    // scroll
-                    case SCROLL:
-                        this.processData(line, (pos, data) =>
+                    case Channel.Scroll:
+                        processData(line, (pos, data) =>
                         {
                             if (scrolltable.TryGetValue(data, out var st))
                             {
@@ -175,14 +155,14 @@ namespace BmsParser
                         break;
                 }
 
-                var basech = 0;
+                Channel baseCH = default;
                 var ch2 = -1;
-                foreach (var ch in NOTE_CHANNELS)
+                foreach (var ch in noteChannels)
                 {
-                    if (ch <= channel && channel <= ch + 8)
+                    if ((int)ch <= channel && channel <= (int)ch + 8)
                     {
-                        basech = ch;
-                        ch2 = channel - ch;
+                        baseCH = ch;
+                        ch2 = channel - (int)ch;
                         channellines.Add(line);
                         break;
                     }
@@ -193,19 +173,19 @@ namespace BmsParser
                     var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat7K : (model.Mode == Mode.Beat10K ? Mode.Beat14K : null);
                     if (mode != null)
                     {
-                        this.processData(line, (pos, data) =>
+                        processData(line, (pos, data) =>
                         {
                             model.Mode = mode;
                         });
                     }
                 }
-                // 5/7KEY  => 10/14KEY			
-                if (basech == P2_KEY_BASE || basech == P2_INVISIBLE_KEY_BASE || basech == P2_LONG_KEY_BASE || basech == P2_MINE_KEY_BASE)
+                // 5/7KEY  => 10/14KEY
+                if (baseCH == Channel.P2KeyBase || baseCH == Channel.P2InvisibleKeyBase || baseCH == Channel.P2LongKeyBase || baseCH == Channel.P2MineKeyBase)
                 {
                     var mode = (model.Mode == Mode.Beat5K) ? Mode.Beat10K : (model.Mode == Mode.Beat7K ? Mode.Beat14K : null);
                     if (mode != null)
                     {
-                        this.processData(line, (pos, data) =>
+                        processData(line, (pos, data) =>
                         {
                             model.Mode = mode;
                         });
@@ -394,10 +374,10 @@ namespace BmsParser
                 {
                     continue;
                 }
-                switch (channel)
+                switch ((Channel)channel)
                 {
-                    case P1_KEY_BASE:
-                        this.processData(line, (pos, data) =>
+                    case Channel.P1KeyBase:
+                        processData(line, (pos, data) =>
                         {
                             // normal note, lnobj
                             var tl = getTimeLine(sectionnum + rate * pos);
@@ -472,14 +452,14 @@ namespace BmsParser
                         });
                         break;
 
-                    case P1_INVISIBLE_KEY_BASE:
-                        this.processData(line, (pos, data) =>
+                    case Channel.P1InvisibleKeyBase:
+                        processData(line, (pos, data) =>
                         {
                             getTimeLine(sectionnum + rate * pos).SetHiddenNote(key, new NormalNote(wavmap[data]));
                         });
                         break;
-                    case P1_LONG_KEY_BASE:
-                        this.processData(line, (pos, data) =>
+                    case Channel.P1LongKeyBase:
+                        processData(line, (pos, data) =>
                         {
                             // long note
                             var tl = getTimeLine(sectionnum + rate * pos);
@@ -587,9 +567,9 @@ namespace BmsParser
                         });
                         break;
 
-                    case P1_MINE_KEY_BASE:
+                    case Channel.P1MineKeyBase:
                         // mine note
-                        this.processData(line, (pos, data) =>
+                        processData(line, (pos, data) =>
                         {
                             var tl = getTimeLine(sectionnum + rate * pos);
                             var insideln = tl.ExistNote(key);
@@ -621,21 +601,21 @@ namespace BmsParser
                             }
                         });
                         break;
-                    case LANE_AUTOPLAY:
+                    case Channel.LaneAutoPlay:
                         // BGレーン
-                        this.processData(line, (pos, data) =>
+                        processData(line, (pos, data) =>
                         {
                             getTimeLine(sectionnum + rate * pos).AddBackGroundNote(new NormalNote(wavmap[data]));
                         });
                         break;
-                    case BGA_PLAY:
-                        this.processData(line, (pos, data) =>
+                    case Channel.BgaPlay:
+                        processData(line, (pos, data) =>
                         {
                             getTimeLine(sectionnum + rate * pos).BgaID = bgamap[data];
                         });
                         break;
-                    case LAYER_PLAY:
-                        this.processData(line, (pos, data) =>
+                    case Channel.LayerPlay:
+                        processData(line, (pos, data) =>
                         {
                             getTimeLine(sectionnum + rate * pos).LayerID = bgamap[data];
                         });
@@ -663,5 +643,27 @@ namespace BmsParser
                 return tl;
             }
         }
+    }
+
+    public enum Channel
+    {
+        Illegal = -1,
+        LaneAutoPlay = 1,
+        SectionRate = 2,
+        BpmChange = 3,
+        BgaPlay = 4,
+        PoorPlay = 6,
+        LayerPlay = 7,
+        BpmChangeExtend = 8,
+        Stop = 9,
+        Scroll = 1020,
+        P1KeyBase = 1 * 36 + 1,
+        P2KeyBase = 2 * 36 + 1,
+        P1InvisibleKeyBase = 3 * 36 + 1,
+        P2InvisibleKeyBase = 4 * 36 + 1,
+        P1LongKeyBase = 5 * 36 + 1,
+        P2LongKeyBase = 6 * 36 + 1,
+        P1MineKeyBase = 13 * 36 + 1,
+        P2MineKeyBase = 14 * 36 + 1
     }
 }

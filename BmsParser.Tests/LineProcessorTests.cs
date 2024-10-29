@@ -144,7 +144,7 @@ namespace BmsParser.Tests
             var processor = new LineProcessor();
             processor.Process(model, line, logs);
 
-            Assert.IsFalse(model.Values.Any());
+            Assert.IsFalse(model.Values.Count != 0);
         }
 
         [DataTestMethod]

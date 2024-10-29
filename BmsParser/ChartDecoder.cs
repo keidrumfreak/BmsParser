@@ -128,17 +128,6 @@ namespace BmsParser
             return result;
         }
 
-        public static int ParseInt62(string s, int index)
-        {
-
-            var result = ParseInt62(s[index], s[index + 1]);
-            if (result == -1)
-            {
-                throw new FormatException();
-            }
-            return result;
-        }
-
         public static int ParseInt62(char c1, char c2)
         {
             int result;
