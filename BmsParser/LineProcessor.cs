@@ -143,7 +143,7 @@ namespace BmsParser
                     return;
                 }
 
-                if (line.Length < Name.Length + 4 || model.Base == 62 ? !Utility.TryParseInt62(line[Name.Length..(Name.Length + 2)], out var seq) : !Utility.TryParseInt36(line[Name.Length..(Name.Length + 2)], out seq))
+                if (line.Length < (Name.Length + 4) || (model.Base == 62 ? !Utility.TryParseInt62(line[Name.Length..(Name.Length + 2)], out var seq) : !Utility.TryParseInt36(line[Name.Length..(Name.Length + 2)], out seq)))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{Name}xxは不十分な定義です : {line}"));
                     return;
@@ -222,7 +222,7 @@ namespace BmsParser
                         prop.SetValue(model, arg.Replace('\\', '/'));
                         break;
                     case ValueType.BaseNum:
-                        if (model.Base == 62 ? !Utility.TryParseInt62(arg[0..2], out var x) : !Utility.TryParseInt36(arg[0..2], out x))
+                        if (arg.Length < 2 || (model.Base == 62 ? !Utility.TryParseInt62(arg[0..2], out var x) : !Utility.TryParseInt36(arg[0..2], out x)))
                         {
                             logs.Add(new DecodeLog(State.Warning, $"{Name}に数字が定義されていません : {line}"));
                             return;
