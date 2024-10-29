@@ -168,6 +168,9 @@ namespace BmsParser
                 processor.Process(model, line, logs);
             }
 
+            if (processor.BarTable.IsEmpty)
+                return null;
+
             model.WavList = [.. processor.WavList];
             model.BgaList = [.. processor.BgaList];
 
