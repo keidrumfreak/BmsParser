@@ -64,7 +64,6 @@ namespace BmsParser
         //}
 
 
-        private static readonly CommandWord[] commandWords = CommandWord.values;
         private static readonly string[] separator = ["\r\n", "\n", "\r"];
 
         ///**
@@ -170,22 +169,6 @@ namespace BmsParser
                     if (processor.Process(model, line, logs))
                     {
                         continue;
-                    }
-                    else
-                    {
-                        foreach (var cw in commandWords)
-                        {
-                            if (line.Length > cw.name.Length + 2 && matchesReserveWord(line, cw.name))
-                            {
-                                var log = cw.function(model, line[(cw.name.Length + 2)..].Trim());
-                                if (log != null)
-                                {
-                                    this.logs.Add(log);
-                                    //Logger.getGlobal().warning(model.getTitle() + " - " + log.getMessage() + " : " + line);
-                                }
-                                break;
-                            }
-                        }
                     }
                 }
                 else if (line[0] == '%')
