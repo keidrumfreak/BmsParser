@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,7 +38,8 @@ namespace BmsParser
         //        }
 
         readonly SequenceWord bpm = new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 };
-        readonly SequenceWord bmp = new("#WAV", ValueType.Path);
+        readonly SequenceWord wav = new("#WAV", ValueType.Path);
+        readonly SequenceWord bmp = new("#BMP", ValueType.Path);
         //static SequenceWord[] sequences =
         //[
         //new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 },
@@ -54,6 +56,18 @@ namespace BmsParser
         public ConcurrentDictionary<int, double> ScrollTable { get; } = new();
 
         public ConcurrentDictionary<int, ConcurrentBag<string>> BarTable { get; } = new();
+
+        public List<string> WavList { get; } = new(62 * 62);
+        public int[] WavMap { get; } = new int[62 * 62];
+
+        public List<string> BgaList { get; } = new(62 * 62);
+        public int[] BgaMap { get; } = new int[62 * 62];
+
+        public LineProcessor()
+        {
+            Array.Fill(WavMap, -2);
+            Array.Fill(BgaMap, -2);
+        }
 
         public bool Process(BmsModel model, string line, List<DecodeLog> logs)
         {
@@ -123,6 +137,14 @@ namespace BmsParser
                     }
                     return true;
                 }
+            }
+            if (wav.IsMatch(line))
+            {
+                wav.Process(line, model, logs, this);
+            }
+            if (bmp.IsMatch(line))
+            {
+                bmp.Process(line, model, logs, this);
             }
 
             //            var top = line.Split(' ')[0].Trim().ToUpper();
@@ -199,13 +221,14 @@ namespace BmsParser
                         numTable.Put(seq, value);
                         return;
                     case ValueType.Path:
-                        var textTable = Name switch
+                        var (list, map) = Name switch
                         {
-                            "#BMP" => model.BgaList,
-                            "#WAV" => model.WavList,
+                            "#BMP" => (processor.BgaList, processor.BgaMap),
+                            "#WAV" => (processor.WavList, processor.WavMap),
                             _ => throw new NotSupportedException()
                         };
-                        textTable[seq] = arg.Replace('\\', '/');
+                        map[seq] = list.Count;
+                        list.Add(arg.Replace('\\', '/'));
                         return;
                 }
             }

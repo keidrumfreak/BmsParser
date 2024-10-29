@@ -10,13 +10,6 @@ namespace BmsParser
 {
     class BmsDecoder : ChartDecoder
     {
-
-        readonly List<string> wavlist = new(62 * 62);
-        private readonly int[] wm = new int[62 * 62];
-
-        readonly List<string> bgalist = new(62 * 62);
-        private readonly int[] bm = new int[62 * 62];
-
         public BmsDecoder(LNType lnType = LNType.LongNote)
         {
             LNType = lnType;
@@ -107,11 +100,6 @@ namespace BmsParser
             // Logger.getGlobal().info(
             // "BMSデータ読み込み時間(ms) :" + (System.currentTimeMillis() - time));
 
-            wavlist.Clear();
-            Array.Fill(wm, -2);
-            bgalist.Clear();
-            Array.Fill(bm, -2);
-
             var randoms = new LinkedList<int>();
             var srandoms = new LinkedList<int>();
             var crandoms = new LinkedList<int>();
@@ -189,62 +177,6 @@ namespace BmsParser
                     if (processor.Process(model, line, logs))
                     {
                         continue;
-                    }
-                    else if (matchesReserveWord(line, "WAV"))
-                    {
-                        // 音源ファイル
-                        if (line.Length >= 8)
-                        {
-                            try
-                            {
-                                var file_name = line[7..].Trim().Replace('\\', '/');
-                                if (@base == 62)
-                                {
-                                    wm[ParseInt62(line, 4)] = wavlist.Count;
-                                }
-                                else
-                                {
-                                    wm[ParseInt36(line, 4)] = wavlist.Count;
-                                }
-                                wavlist.Add(file_name);
-                            }
-                            catch (FormatException)
-                            {
-                                logs.Add(new DecodeLog(State.Warning, "#WAVxxは不十分な定義です : " + line));
-                            }
-                        }
-                        else
-                        {
-                            logs.Add(new DecodeLog(State.Warning, "#WAVxxは不十分な定義です : " + line));
-                        }
-                    }
-                    else if (matchesReserveWord(line, "BMP"))
-                    {
-                        // BGAファイル
-                        if (line.Length >= 8)
-                        {
-                            try
-                            {
-                                var file_name = line[7..].Trim().Replace('\\', '/');
-                                if (@base == 62)
-                                {
-                                    bm[ParseInt62(line, 4)] = bgalist.Count;
-                                }
-                                else
-                                {
-                                    bm[ParseInt36(line, 4)] = bgalist.Count;
-                                }
-                                bgalist.Add(file_name);
-                            }
-                            catch (FormatException)
-                            {
-                                logs.Add(new DecodeLog(State.Warning, "#BMPxxは不十分な定義です : " + line));
-                            }
-                        }
-                        else
-                        {
-                            logs.Add(new DecodeLog(State.Warning, "#BMPxxは不十分な定義です : " + line));
-                        }
                     }
                     else if (matchesReserveWord(line, "STOP"))
                     {
@@ -337,8 +269,8 @@ namespace BmsParser
                 }
             }
 
-            model.WavList = [.. wavlist];
-            model.BgaList = [.. bgalist];
+            model.WavList = [.. processor.WavList];
+            model.BgaList = [.. processor.BgaList];
 
             Section? prev = null;
             var sections = new Section[processor.BarTable.Keys.Max() + 1];
@@ -359,7 +291,7 @@ namespace BmsParser
             timelines.Put(0.0, new TimeLineCache(0.0, basetl));
             foreach (var section in sections)
             {
-                section.MakeTimeLines(wm, bm, timelines, lnlist, lnendstatus);
+                section.MakeTimeLines(processor.WavMap, processor.BgaMap, timelines, lnlist, lnendstatus);
             }
             // Logger.getGlobal().info(
             // "Section生成時間(ms) :" + (System.currentTimeMillis() - time));
