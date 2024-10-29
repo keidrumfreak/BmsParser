@@ -64,10 +64,6 @@ namespace BmsParser
         //}
 
 
-        private readonly Dictionary<int, double> scrolltable = [];
-        private readonly Dictionary<int, double> stoptable = [];
-        //private readonly Dictionary<int, double> bpmtable = [];
-
         private static readonly CommandWord[] commandWords = CommandWord.values;
         private static readonly string[] separator = ["\r\n", "\n", "\r"];
 
@@ -87,9 +83,6 @@ namespace BmsParser
             logs.Clear();
             var time = DateTime.Now.Ticks;
             var model = new BmsModel(ispms ? Mode.Popn9K : Mode.Beat5K);
-            scrolltable.Clear();
-            stoptable.Clear();
-            //bpmtable.Clear();
 
             // BMS読み込み、ハッシュ値取得
             using var mem = new MemoryStream(data);
@@ -178,62 +171,6 @@ namespace BmsParser
                     {
                         continue;
                     }
-                    else if (matchesReserveWord(line, "STOP"))
-                    {
-                        if (line.Length >= 9)
-                        {
-                            if (double.TryParse(line[8..].Trim(), out var stop))
-                            {
-                                stop /= 192;
-                                if (stop < 0)
-                                {
-                                    stop = Math.Abs(stop);
-                                    logs.Add(new DecodeLog(State.Warning, "#negative STOPはサポートされていません : " + line));
-                                }
-                                if (@base == 62)
-                                {
-                                    stoptable.Put(ParseInt62(line, 5), stop);
-                                }
-                                else
-                                {
-                                    stoptable.Put(ParseInt36(line, 5), stop);
-                                }
-                            }
-                            else
-                            {
-                                logs.Add(new DecodeLog(State.Warning, "#STOPxxに数字が定義されていません : " + line));
-                            }
-                        }
-                        else
-                        {
-                            logs.Add(new DecodeLog(State.Warning, "#STOPxxは不十分な定義です : " + line));
-                        }
-                    }
-                    else if (matchesReserveWord(line, "SCROLL"))
-                    {
-                        if (line.Length >= 11)
-                        {
-                            if (double.TryParse(line[10..].Trim(), out var scroll))
-                            {
-                                if (@base == 62)
-                                {
-                                    scrolltable.Put(ParseInt62(line, 7), scroll);
-                                }
-                                else
-                                {
-                                    scrolltable.Put(ParseInt36(line, 7), scroll);
-                                }
-                            }
-                            else
-                            {
-                                logs.Add(new DecodeLog(State.Warning, "#SCROLLxxに数字が定義されていません : " + line));
-                            }
-                        }
-                        else
-                        {
-                            logs.Add(new DecodeLog(State.Warning, "#SCROLLxxは不十分な定義です : " + line));
-                        }
-                    }
                     else
                     {
                         foreach (var cw in commandWords)
@@ -277,7 +214,7 @@ namespace BmsParser
             for (var i = 0; i <= processor.BarTable.Keys.Max(); i++)
             {
                 sections[i] = new Section(model, prev, processor.BarTable.TryGetValue(i, out var bars) ? [.. bars] : ([]), processor.BpmTable.ToDictionary(),
-                        stoptable, scrolltable, logs);
+                        processor.StopTable.ToDictionary(), processor.ScrollTable.ToDictionary(), logs);
                 prev = sections[i];
             }
 

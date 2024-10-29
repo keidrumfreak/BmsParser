@@ -40,6 +40,8 @@ namespace BmsParser
         readonly SequenceWord bpm = new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 };
         readonly SequenceWord wav = new("#WAV", ValueType.Path);
         readonly SequenceWord bmp = new("#BMP", ValueType.Path);
+        readonly SequenceWord stop = new("#STOP", ValueType.Number) { NumberRange = stop => stop >= 0 };
+        readonly SequenceWord scroll = new("#SCROLL", ValueType.Number);
         //static SequenceWord[] sequences =
         //[
         //new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 },
@@ -141,10 +143,22 @@ namespace BmsParser
             if (wav.IsMatch(line))
             {
                 wav.Process(line, model, logs, this);
+                return true;
             }
             if (bmp.IsMatch(line))
             {
                 bmp.Process(line, model, logs, this);
+                return true;
+            }
+            if (stop.IsMatch(line))
+            {
+                stop.Process(line, model, logs, this);
+                return true;
+            }
+            if (scroll.IsMatch(line))
+            {
+                scroll.Process(line, model, logs, this);
+                return true;
             }
 
             //            var top = line.Split(' ')[0].Trim().ToUpper();
@@ -189,7 +203,7 @@ namespace BmsParser
 
             public void Process(string line, BmsModel model, List<DecodeLog> logs, LineProcessor processor)
             {
-                if (line.Length < Name.Length + 4 || model.Base == 62 ? !Utility.TryParseInt62(line[4..6], out var seq) : !Utility.TryParseInt36(line[4..6], out seq))
+                if (line.Length < Name.Length + 4 || model.Base == 62 ? !Utility.TryParseInt62(line[Name.Length..(Name.Length + 2)], out var seq) : !Utility.TryParseInt36(line[Name.Length..(Name.Length + 2)], out seq))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{Name}xxは不十分な定義です : {line}"));
                     return;
