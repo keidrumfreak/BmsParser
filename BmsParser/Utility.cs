@@ -68,5 +68,51 @@ namespace BmsParser
 
             return true;
         }
+
+        public static bool TryParseInt62(string s, out int value)
+        {
+            value = 0;
+
+            if (s.Length != 2)
+                return false;
+
+            var c1 = s[0];
+            if (c1 >= '0' && c1 <= '9')
+            {
+                value = (c1 - '0') * 62;
+            }
+            else if (c1 >= 'A' && c1 <= 'Z')
+            {
+                value = (c1 - 'A' + 10) * 62;
+            }
+            else if (c1 >= 'a' && c1 <= 'z')
+            {
+                value = (c1 - 'a' + 36) * 62;
+            }
+            else
+            {
+                return false;
+            }
+
+            var c2 = s[1];
+            if (c2 >= '0' && c2 <= '9')
+            {
+                value += c2 - '0';
+            }
+            else if (c2 >= 'A' && c2 <= 'Z')
+            {
+                value += c2 - 'A' + 10;
+            }
+            else if (c2 >= 'a' && c2 <= 'z')
+            {
+                value += c2 - 'a' + 36;
+            }
+            else
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

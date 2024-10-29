@@ -73,7 +73,7 @@ namespace BmsParser
 
         private readonly Dictionary<int, double> scrolltable = [];
         private readonly Dictionary<int, double> stoptable = [];
-        private readonly Dictionary<int, double> bpmtable = [];
+        //private readonly Dictionary<int, double> bpmtable = [];
 
         private static readonly CommandWord[] commandWords = CommandWord.values;
         private static readonly string[] separator = ["\r\n", "\n", "\r"];
@@ -96,7 +96,7 @@ namespace BmsParser
             var model = new BmsModel(ispms ? Mode.Popn9K : Mode.Beat5K);
             scrolltable.Clear();
             stoptable.Clear();
-            bpmtable.Clear();
+            //bpmtable.Clear();
 
             // BMS読み込み、ハッシュ値取得
             using var mem = new MemoryStream(data);
@@ -189,53 +189,6 @@ namespace BmsParser
                     if (processor.Process(model, line, logs))
                     {
                         continue;
-                    }
-                    else if (matchesReserveWord(line, "BPM"))
-                    {
-                        if (line[4] == ' ')
-                        {
-                            // BPMは小数点のケースがある(FREEDOM DiVE)
-                            if (double.TryParse(line[5..].Trim(), out var bpm))
-                            {
-                                if (bpm > 0)
-                                {
-                                    model.Bpm = bpm;
-                                }
-                                else
-                                {
-                                    logs.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
-                                }
-                            }
-                            else
-                            {
-                                logs.Add(new DecodeLog(State.Warning, "#BPMに数字が定義されていません : " + line));
-                            }
-                        }
-                        else
-                        {
-                            if (double.TryParse(line[7..].Trim(), out var bpm))
-                            {
-                                if (bpm > 0)
-                                {
-                                    if (@base == 62)
-                                    {
-                                        bpmtable.Put(ParseInt62(line, 4), bpm);
-                                    }
-                                    else
-                                    {
-                                        bpmtable.Put(ParseInt36(line, 4), bpm);
-                                    }
-                                }
-                                else
-                                {
-                                    logs.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
-                                }
-                            }
-                            else
-                            {
-                                logs.Add(new DecodeLog(State.Warning, "#BPMxxに数字が定義されていません : " + line));
-                            }
-                        }
                     }
                     else if (matchesReserveWord(line, "WAV"))
                     {
@@ -391,7 +344,7 @@ namespace BmsParser
             var sections = new Section[processor.BarTable.Keys.Max() + 1];
             for (var i = 0; i <= processor.BarTable.Keys.Max(); i++)
             {
-                sections[i] = new Section(model, prev, processor.BarTable.TryGetValue(i, out var bars) ? [.. bars] : ([]), bpmtable,
+                sections[i] = new Section(model, prev, processor.BarTable.TryGetValue(i, out var bars) ? [.. bars] : ([]), processor.BpmTable.ToDictionary(),
                         stoptable, scrolltable, logs);
                 prev = sections[i];
             }

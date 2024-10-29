@@ -34,16 +34,18 @@ namespace BmsParser
         //            new CommandWord("#DIFFICULTY", ValueType.Number, nameof(BmsModel.Difficulty)),
         //            new CommandWord("#BANNER", ValueType.Path, nameof(BmsModel.Banner)),
         //            new CommandWord("#BPM", ValueType.Other, nameof(BmsModel.Bpm))
-        //        };
+        //        }
 
-        //        static SequenceWord[] sequences =
-        //        {
-        //            new SequenceWord("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 },
+        readonly SequenceWord bpm = new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 };
+        readonly SequenceWord bmp = new("#WAV", ValueType.Path);
+        //static SequenceWord[] sequences =
+        //[
+        //new("#BPM", ValueType.Number) { NumberRange = bpm => bpm > 0 },
         //            new SequenceWord("#WAV", ValueType.Path),
         //            new SequenceWord("#BMP", ValueType.Path),
         //            new SequenceWord("#STOP", ValueType.Number) { NumberRange = stop => stop >= 0 },
         //            new SequenceWord("#SCROLL", ValueType.Number)
-        //        };
+        //];
 
         public ConcurrentDictionary<int, double> BpmTable { get; } = new();
 
@@ -66,6 +68,7 @@ namespace BmsParser
                 if (!int.TryParse(line[1..4], out var barNum))
                 {
                     logs.Add(new DecodeLog(State.Warning, "小節に数字が定義されていません : " + line));
+                    return true;
                 }
                 lock (BarTable)
                 {
@@ -77,6 +80,49 @@ namespace BmsParser
                     bar.Add(line);
                 }
                 return true;
+            }
+
+            if (bpm.IsMatch(line))
+            {
+                if (line[4] == ' ')
+                {
+                    if (!double.TryParse(line[5..].Trim(), out var bpm))
+                    {
+                        logs.Add(new DecodeLog(State.Warning, "#BPMに数字が定義されていません : " + line));
+                        return true;
+                    }
+                    if (bpm > 0)
+                    {
+                        model.Bpm = bpm;
+                    }
+                    else
+                    {
+                        logs.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
+                    }
+                    return true;
+                }
+                else
+                {
+                    if (!double.TryParse(line[7..].Trim(), out var bpm))
+                    {
+                        logs.Add(new DecodeLog(State.Warning, "#BPMxxに数字が定義されていません : " + line));
+                        return true;
+                    }
+                    if (bpm <= 0)
+                    {
+                        logs.Add(new DecodeLog(State.Warning, "#negative BPMはサポートされていません : " + line));
+                        return true;
+                    }
+                    if (model.Base == 62 ? Utility.TryParseInt62(line[4..6], out var seq) : Utility.TryParseInt36(line[4..6], out seq))
+                    {
+                        BpmTable.Put(seq, bpm);
+                    }
+                    else
+                    {
+                        logs.Add(new DecodeLog(State.Warning, "#BPMxxに数字が定義されていません : " + line));
+                    }
+                    return true;
+                }
             }
 
             //            var top = line.Split(' ')[0].Trim().ToUpper();
@@ -106,13 +152,22 @@ namespace BmsParser
             return false;
         }
 
-        record SequenceWord(string Name, ValueType ValueType)
+        abstract record Keyword(string Name)
         {
-            public required Func<double, bool> NumberRange { get; init; }
-
-            public void Process(string top, string line, BmsModel model, List<DecodeLog> logs, LineProcessor processor)
+            public bool IsMatch(string line)
             {
-                if (top.Length != Name.Length + 2 || line.Length < Name.Length + 4 || !Utility.TryParseInt36(top[^2..], out var seq))
+                var top = line[0..Name.Length];
+                return top.Equals(Name, StringComparison.CurrentCultureIgnoreCase);
+            }
+        }
+
+        record SequenceWord(string Name, ValueType ValueType) : Keyword(Name)
+        {
+            public Func<double, bool>? NumberRange { get; init; }
+
+            public void Process(string line, BmsModel model, List<DecodeLog> logs, LineProcessor processor)
+            {
+                if (line.Length < Name.Length + 4 || model.Base == 62 ? !Utility.TryParseInt62(line[4..6], out var seq) : !Utility.TryParseInt36(line[4..6], out seq))
                 {
                     logs.Add(new DecodeLog(State.Warning, $"{Name}xxは不十分な定義です : {line}"));
                     return;
