@@ -267,7 +267,7 @@ namespace BmsParser
             sb.Append($"JUDGERANK:{JudgeRank}\n");
             sb.Append($"TOTAL:{Total}\n");
             if (LNMode != LNMode.Undefined)
-                sb.Append($"LNMODE:{LNMode}\n");
+                sb.Append($"LNMODE:{(int)LNMode}\n");
             var nowBpm = -double.MinValue;
             var tlsb = new StringBuilder();
             foreach (var tl in Timelines)
@@ -312,7 +312,7 @@ namespace BmsParser
                     }
                     else if (n is MineNote mine)
                     {
-                        tlsb.Append("m" + mine.Damage);
+                        tlsb.Append($"m{mine.Damage}");
                         write = true;
                     }
                     else
