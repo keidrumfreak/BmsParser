@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using static BmsParser.Layer;
 
 namespace BmsParser.Bmson
 {
@@ -16,11 +14,6 @@ namespace BmsParser.Bmson
         public BmsonDecoder(LNType lnType = LNType.LongNote)
         {
             LNType = lnType;
-        }
-
-        new public BmsModel? Decode(string path)
-        {
-            return Decode(path, File.ReadAllBytes(path));
         }
 
         public override BmsModel? Decode(ChartInformation info)
@@ -50,7 +43,7 @@ namespace BmsParser.Bmson
         //    return null;
         //}
 
-        public BmsModel? Decode(string path, byte[] bin)
+        public override BmsModel? Decode(string path, byte[] bin)
         {
             //Logger.getGlobal().fine("BMSONファイル解析開始 :" + f.ToString());
             logs.Clear();

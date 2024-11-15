@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using BmsParser;
 using BmsParser.Bmson;
 
 namespace BmsParser
@@ -19,50 +16,27 @@ namespace BmsParser
         protected LNType LNType { get; set; }
 
         protected List<DecodeLog> logs = [];
+        public IEnumerable<DecodeLog> DecodeLog => logs;
 
-        /**
-         * パスで指定したファイルをBMSModelに変換する
-         * 
-         * @param file
-         *            譜面ファイル
-         * @return 変換したBMSModel。失敗した場合はnull
-         */
-        public BmsModel? Decode(FileInfo file)
-        {
-            return Decode(file.FullName);
-        }
-
-        /**
-         * パスで指定したファイルをBMSModelに変換する
-         * 
-         * @param path
-         *            譜面ファイルのパス
-         * @return 変換したBMSModel。失敗した場合はnull
-         */
+        /// <summary>
+        /// パスで指定したファイルをBMSModelに変換する
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public BmsModel? Decode(string path)
         {
-            return Decode(new ChartInformation(path, LNType, null));
-        }
-
-        /**
-         * デコードログを取得する
-         * 
-         * @return デコードログ
-         */
-        public DecodeLog[] GetDecodeLog()
-        {
-            return [.. logs];
+            return Decode(path, File.ReadAllBytes(path));
         }
 
         public abstract BmsModel? Decode(ChartInformation info);
 
-        /**
-         * パスで指定したファイルに対応するChartDecoderを取得する
-         * 
-         * @param p
-         *            譜面ファイルのパス
-         * @return 対応するChartDecoder。存在しない場合はnull
-         */
+        public abstract BmsModel? Decode(string path, byte[] bin);
+
+        /// <summary>
+        /// パスで指定したファイルに対応するChartDecoderを取得する
+        /// </summary>
+        /// <param name="p">譜面ファイルのパス</param>
+        /// <returns></returns>
         public static ChartDecoder? GetDecoder(string p)
         {
             var s = Path.GetFileName(p).ToLower();

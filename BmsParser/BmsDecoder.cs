@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace BmsParser
 {
@@ -15,15 +13,9 @@ namespace BmsParser
             LNType = lnType;
         }
 
-        new public BmsModel? Decode(string path)
+        public override BmsModel? Decode(string path, byte[] bin)
         {
-            var model = decode(path, File.ReadAllBytes(path), path.EndsWith(".pms"), null);
-            return model;
-        }
-
-        public BmsModel? Decode(string path, byte[] bin)
-        {
-            var model = decode(path, bin, path.EndsWith(".pms"), null);
+            var model = decode(path, bin, null);
             return model;
         }
 
@@ -32,7 +24,7 @@ namespace BmsParser
             try
             {
                 this.LNType = info.LNType;
-                return decode(info.Path, File.ReadAllBytes(info.Path), info.Path.ToString().ToLower().EndsWith(".pms"), info.SelectedRandoms);
+                return decode(info.Path, File.ReadAllBytes(info.Path), info.SelectedRandoms);
             }
             catch (IOException)
             {
@@ -77,11 +69,11 @@ namespace BmsParser
         //    return this.decode(null, data, ispms, random);
         //}
 
-        private BmsModel? decode(string path, byte[] data, bool ispms, int[]? selectedRandom)
+        private BmsModel? decode(string path, byte[] data, int[]? selectedRandom)
         {
             logs.Clear();
             var time = DateTime.Now.Ticks;
-            var model = new BmsModel(ispms ? Mode.Popn9K : Mode.Beat5K);
+            var model = new BmsModel(path.ToLower().EndsWith(".pms") ? Mode.Popn9K : Mode.Beat5K);
 
             // BMS読み込み、ハッシュ値取得
             using var mem = new MemoryStream(data);

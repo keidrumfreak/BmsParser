@@ -232,30 +232,6 @@ namespace BmsParser
         /// </summary>
         public int Base { get; set; } = 36;
 
-        public static BmsModel? Decode(string path)
-        {
-            if (path.EndsWith("bmson"))
-            {
-                return new BmsonDecoder().Decode(path);
-            }
-            else
-            {
-                return new BmsDecoder().Decode(path);
-            }
-        }
-
-        public static BmsModel? Decode(string path, byte[] bin)
-        {
-            if (path.EndsWith("bmson"))
-            {
-                return new BmsonDecoder().Decode(path, bin);
-            }
-            else
-            {
-                return new BmsDecoder().Decode(path, bin);
-            }
-        }
-
         public int CompareTo(BmsModel model)
         {
             return Title.CompareTo(model.title);
